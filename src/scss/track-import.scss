@@ -1,0 +1,60 @@
+#track-import-container {
+  position: relative;
+  padding: 20px;
+
+  .close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+
+    i {
+      font-size: 22px;
+      color: $grey-7
+    }
+  }
+
+  section {
+    margin-bottom: 20px;
+
+    h1 {
+      font-weight: 300;
+      font-size: 21px;
+      margin-bottom: 15px;
+    }
+  }
+
+  .input-button-grp {
+    display:flex;
+    width: 100%;
+    max-width: 300px;
+
+    input {
+      flex: 1 1 auto;
+      border: 1px solid $grey-4;
+      padding: 2px 5px;
+    }
+
+    button {
+      flex: 0 0 auto;
+      border: 1px solid $grey-4;
+      border-left: none;
+      padding: 0 8px;
+      background: $grey-1;
+
+      display: flex;
+      align-items: center;
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border-width: 1px;
+      }
+
+      i {
+        font-size: 20px;
+        color: $grey-7
+      }
+    }
+  }
+}
