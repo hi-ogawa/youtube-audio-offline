@@ -1,0 +1,60 @@
+#saver-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  > div:nth-child(1) { // header
+    font-weight: 300;
+    font-size: 21px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+  }
+
+  > div:nth-child(2) { // body (list)
+    flex: 1 1 auto;
+    overflow-y: auto;
+
+    > div { // list entry
+      display: flex;
+      padding: 7px;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+      > div:nth-child(1) { // title
+        flex: 1 1 auto;
+        font-size: 15px;
+        font-weight: 300;
+      }
+
+      > div:not(:nth-child(1)) { // action
+        cursor: pointer;
+        margin-left: 7px;
+
+        > i {
+          font-size: 22px;
+        }
+      }
+    }
+  }
+
+  > div:nth-child(3) { // Create action
+    flex: 0 0 auto;
+    height: 45px;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    > div {
+      padding: 6px;
+      background: $grey-6;
+      box-shadow: 0 0px 2px 0px rgba(0, 0, 0, 0.5);
+      color: $grey-0;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  }
+}

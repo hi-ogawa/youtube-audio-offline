@@ -5,14 +5,19 @@ import objectPath from "object-path";
 import _ from 'lodash';
 import localforage from 'localforage';
 import graphql from 'graphql-anywhere';
+
 import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, getAudioData } from "./utils";
+import AudioManager from './AudioManager';
 
 // type ID = String;
 
 // interface Player {
-//   audioUrl: string,
 //   currentIndex: int,
-//   queuedTrackIds: Array<ID>
+//   queuedTrackIds: Array<ID>,
+//   status enum 'PLAYING', 'STOPPED'
+//   currentTime: int
+//   duration: int
+//   audio: Audio
 // }
 
 // interface Track {
@@ -25,15 +30,19 @@ import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, g
 
 export const initialState = {
   player: {
-    audioUrl: null,
     currentIndex: null,
     queuedTrackIds: [],
+    status: 'STOPPED', // 'PLAYING'
+    currentTime: null,
+    duration: null
   },
   tracks: [],
+  trackListMode: 'GROUP', // 'FLAT'
+  playlists: [], // { name: string, id: string }
   modal: {
-    className: null, // 'TrackImport'
-  }
-}
+    className: null, // cf modalPages in Modal.js
+  },
+};
 
 export const selectors = {
   statePath: (path) => (S) =>
@@ -49,9 +58,49 @@ export const selectors = {
 }
 
 export const actions = {
+  // Dirty shortcut, not supposed to be used much
+  _U: (command) => async (D, S) => U(D)(command),
+
+  getSessionKeys: () => async (D, S) => {
+    const keys = await localforage.getItem('session-keys');
+    return keys || [];
+  },
+  createSession: () => async (D, S) => {
+    const key = (new Date()).toLocaleString();
+    const keys = await D(actions.getSessionKeys())
+    keys.push(key);
+    await localforage.setItem(`session-keys`, keys);
+    await localforage.setItem(`session-state-${key}`, S());
+  },
+  loadSession: (key) => async (D, S) => {
+    const { tracks, playlists, trackListMode } = await localforage.getItem(`session-state-${key}`);
+    U(D)({ $merge: {
+      ...initialState,
+      tracks,
+      playlists,
+      trackListMode,
+    }});
+  },
+  updateSession: (key) => async (D, S) => {
+    await localforage.setItem(`session-state-${key}`, S());
+  },
+  destroySession: (key) => async (D, S) => {
+    const keys = await D(actions.getSessionKeys());
+    await localforage.removeItem(`session-state-${key}`);
+    await localforage.setItem(`session-keys`, keys.filter(_key => _key !== key));
+  },
+  loadLatestSession: () => async (D, S) => {
+    const keys = await D(actions.getSessionKeys());
+    const key = _.last(keys);
+    if (key) {
+      await D(actions.loadSession(key));
+    }
+  },
+
   setModal: (className) => async (D, S) => {
     U(D)({ modal: { className: { $set: className } } });
   },
+
   importTracks: (url) => async (D, S) => {
     const { type, id } = parseYoutubeUrl(url);
     let tracks;
@@ -63,19 +112,24 @@ export const actions = {
         title:   data.title,
         author:  data.author,
         audioReady: false,
-        audioUrl: null,
       }]
     } else if (type === 'playlist') {
-      const data = await getYoutubePlaylistInfo(id);
-      tracks = data.videos.map(v => ({
+      const { name, videos } = await getYoutubePlaylistInfo(id);
+      if (!S().playlists.find(p => p.id === id)) {
+        U(D)({
+          playlists: { $push: [{ id, name }] }
+        });
+      }
+      tracks = videos.map(v => ({
           id:      v.videoId,
           videoId: v.videoId,
           title:   v.title,
           author:  v.author,
           audioReady: false,
-          audioUrl: null,
       }));
     }
+    const oldTrackIds = S().tracks.map(track => track.id);
+    tracks = tracks.filter(track => !oldTrackIds.includes(track.id));
     await Promise.all(tracks.map(async t => {
       const value = await localforage.getItem(t.id);
       t.audioReady = !!value;
@@ -116,24 +170,77 @@ export const actions = {
       }
     });
   },
-  queueAndListenTrack: (id) => async (D, S) => {
-    const blob = await localforage.getItem(id);
-    const audioUrl = URL.createObjectURL(blob);
+  queueTrack: (id, andPlay) => async (D, S) => {
+    const index = S().player.queuedTrackIds.length;
     U(D)({
       player: {
-        audioUrl: { $set: audioUrl },
-        currentIndex: { $set: 0 },
         queuedTrackIds: { $push: [ id ] }
       }
     });
+    if (andPlay) {
+      D(actions.setCurrentTrackFromQueueByIndex(index));
+    }
   },
-  queueTrack: (id) => async (D, S) => {
+  setCurrentTrackFromQueueByIndex: (index) => async (D, S) => {
+    const id = S().player.queuedTrackIds[index];
     U(D)({
       player: {
-        queuedTrackIds: { $push: [ id ] }
+        currentIndex: { $set: index },
       }
     });
-  }
+    D(actions.play(id));
+  },
+  moveCurrentTrack: (diff) => async (D, S) => {
+    const { currentIndex, queuedTrackIds } = S().player;
+    let index = (currentIndex + diff) % queuedTrackIds.length;
+    if (index < 0) { index = index + queuedTrackIds.length; }
+    D(actions.setCurrentTrackFromQueueByIndex(index));
+  },
+  removeTrackFromQueueByIndex: (index) => async (D, S) => {
+    U(D)({ player: { queuedTrackIds: { $splice: [[index, 1]] } } });
+  },
+
+  play: (id) => async (D, S) => {
+    const blob = await localforage.getItem(id);
+    console.assert(blob !== null);
+    AudioManager.setBlob(blob)
+    await AudioManager.play();
+    U(D)({ player: { status: { $set: 'PLAYING' } } });
+  },
+  unpause: () => async (D, S) => {
+    await AudioManager.play();
+    U(D)({ player: { status: { $set: 'PLAYING' } } });
+  },
+  pause: () => async (D, S) => {
+    await AudioManager.pause();
+    U(D)({ player: { status: { $set: 'STOPPED' } } });
+  },
+  seek: (time) => async (D, S) => {
+    await AudioManager.seek(time);
+  },
+}
+
+export const setupWithStore = async (store) => {
+  initializeAudioManager(store);
+  await store.dispatch(actions.loadLatestSession());
+}
+
+const initializeAudioManager = (store) => {
+  AudioManager.initialize();
+  AudioManager.addEventListener('timeupdate', (e) => {
+    const time = e.target.currentTime;
+    store.dispatch(
+      actions._U({ player: { currentTime: { $set: time } } })
+    );
+  });
+  AudioManager.addEventListener('durationchange', (e) => {
+    store.dispatch(
+      actions._U({ player: { duration: { $set: e.target.duration } } })
+    );
+  });
+  AudioManager.addEventListener('ended', () => {
+    store.dispatch(actions.moveCurrentTrack(+1));
+  });
 }
 
 const U = (D) => (command) => D({
@@ -149,6 +256,7 @@ const resolverQuery = {
     queuedTrackIds.map(id => _.find(tracks, { id }))
 }
 
+// TODO: Use graphql-tools instead essentially all actions can be just resolvers
 export const resolverAnywhere = (fieldName, rootValue, args, state) =>
   resolverQuery[fieldName]
   ? resolverQuery[fieldName](null, args, state)

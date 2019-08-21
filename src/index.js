@@ -3,16 +3,20 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
 import './scss/index.scss';
-import configureStore from './configureStore.js';
+import configureStore from './configureStore';
 import Root from './Root';
 import DevTools from './DevTools';
 
-const store = configureStore();
+const Main = async () => {
+  const store = await configureStore();
 
-ReactDOM.render(
-  <Provider store={store}>
-    <DevTools />
-    <Root />
-  </Provider>,
-  document.getElementById('root'),
-);
+  ReactDOM.render(
+    <Provider store={store}>
+      <DevTools />
+      <Root />
+    </Provider>,
+    document.getElementById('root'),
+  );
+}
+
+Main();

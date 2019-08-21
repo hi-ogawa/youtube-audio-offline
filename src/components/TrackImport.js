@@ -1,28 +1,33 @@
-import React, { useRef } from 'react';
-import { useActions, useLoader } from '../stateUtils';
-// import LoaderButton from './LoaderButton';
+import React, { useState } from 'react';
+import gql from 'graphql-tag';
+
+import { useActions, useLoader, useGQL } from '../stateUtils';
+import LoaderButton from './LoaderButton';
+
+const Q1 = gql`{
+  playlists {
+    id, name
+  }
+}`;
 
 export default function TrackImport() {
-  const { setModal, importTracks } = useActions();
+  const { playlists } = useGQL(Q1);
+  const { importTracks } = useActions();
   const [ _importTracks, { loading, error } ] = useLoader(importTracks);
-  const inputRef = useRef(null);
+  const [ text, setText ] = useState('');
 
   return (
     <div id='track-import-container'>
-      <div className='close-modal' onClick={() => setModal(null)}>
-        <i className='material-icons'>close</i>
-      </div>
-
       <section>
         <h1>Import Tracks</h1>
         <div>
           <div className='input-button-grp'>
-            <input type="text" ref={inputRef} placeholder='Video or Playlist URL' />
+            <input type="text" value={text} onChange={e => setText(e.target.value)} placeholder='Video or Playlist URL' />
             <button
               onClick={() =>
-                _importTracks(inputRef.current.value)
-                .then(() => inputRef.current.value = '')}
-              disabled={loading}
+                _importTracks(text)
+                .then(() => setText(''))}
+              disabled={text.length === 0 || loading}
             >
               { error
                 ? <i className='material-icons'>error</i>
@@ -37,7 +42,16 @@ export default function TrackImport() {
 
       <section>
         <h1>Re-import from Playlist</h1>
-        <div>TODO</div>
+        <div className='playlists'>
+          { playlists.map(playlist =>
+              <div key={playlist.id}>
+                <div>{ playlist.name }</div>
+                <LoaderButton
+                  action={() => importTracks(`https://www.youtube.com/playlist?list=${playlist.id}`)}
+                  icon='sync' />
+              </div>
+          )}
+        </div>
       </section>
     </div>
   );

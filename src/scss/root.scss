@@ -1,0 +1,78 @@
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+
+  @media (min-width: $bp-md) {
+    max-width: $bp-md;
+    margin: 0 auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  background: $grey-0;
+  font-size: 14px;
+
+  #header {
+    flex: 0 0 auto;
+    height: 45px;
+    box-shadow: 0 2px 4px $grey-2;
+
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex: 0 0 auto;
+
+    > div {
+      margin-right: 15px;
+      cursor: pointer;
+    }
+  }
+
+  #track-list-container {
+    flex: 1 1 auto;
+    height: 100%;
+    overflow-y: auto; // Necessary for child (e.g. #flat-list) to scroll
+  }
+
+  #player {
+    flex: 0 0 auto;
+    height: 60px;
+    box-shadow: 0 -2px 4px $grey-3;
+  }
+}
+
+#modal {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.5);
+
+  &[disabled] {
+    visibility: hidden;
+  }
+
+  #modal-inner {
+    width: 80%;
+    height: 90%;
+    left: 10%;
+    top: 5%;
+    background: white;
+    box-shadow: 0 0px 16px 0px rgba(0, 0, 0, 0.4);
+
+    position: relative;
+    #close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      cursor: pointer;
+      z-index: 2;
+
+      i {
+        font-size: 22px;
+        color: $grey-7
+      }
+    }
+  }
+}

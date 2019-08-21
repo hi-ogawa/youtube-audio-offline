@@ -1,13 +1,15 @@
 import { createStore, applyMiddleware, compose } from 'redux';
 import thunk from 'redux-thunk';
-import { persistState } from 'redux-devtools';
 import DevTools from './DevTools.js';
-import { reducer, initialState } from './stateUtils.js';
+import { reducer, initialState, setupWithStore } from './stateUtils.js';
 
 const enhancer = compose(
   applyMiddleware(thunk),
-  DevTools.instrument(),
-  persistState((new URL(window.location.href)).searchParams.get('dev_state_key'))
+  DevTools.instrument()
 );
 
-export default () => createStore(reducer, initialState, enhancer);
+export default async () => {
+  const store = createStore(reducer, initialState, enhancer);
+  await setupWithStore(store);
+  return store;
+}
