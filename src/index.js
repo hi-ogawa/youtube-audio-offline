@@ -12,7 +12,8 @@ const Main = async () => {
 
   ReactDOM.render(
     <Provider store={store}>
-      <DevTools />
+      {/* TODO: Can compiler eliminate this? */}
+      { process.env.NODE_ENV === 'production' || <DevTools /> }
       <Root />
     </Provider>,
     document.getElementById('root'),

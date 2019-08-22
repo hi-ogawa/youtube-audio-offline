@@ -31,7 +31,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "test:debug": "react-scripts --inspect-brk test --runInBand --no-cache",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "now ./build -A ../now.json",
+    "build:deploy": "npm run build && npm run deploy"
   },
   "eslintConfig": {
     "extends": "react-app"

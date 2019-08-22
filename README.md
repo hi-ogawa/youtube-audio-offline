@@ -9,6 +9,7 @@ TODO
 - Remove track
 - Player progress bar
 - Eject create-react-app and setup hot-loader
+- Setup create-react-app default service worker for offline
 
 
 Secondary Objectives
@@ -21,4 +22,5 @@ Secondary Objectives
 References
 
 - https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
-- https://github.com/baptistemanson/immutable-path
+- https://zeit.co/docs/v2/advanced/configuration/
+- https://github.com/zeit/now-cli/issues/622

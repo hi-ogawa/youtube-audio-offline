@@ -91,9 +91,13 @@ export const getYoutubePlaylistInfo = (id) =>
     } })
   .then(extractPlaylistInfo);
 
+const youtubeDlUrl =
+  process.env.NODE_ENV === 'production'
+  ? 'https://youtube-dl-service.herokuapp.com'
+  : 'http://localhost:3001';
+
 export const getAudioData = (videoId) =>
-  fetch(`http://localhost:3001/download?video=${videoId}`)
-  // fetch(`https://youtube-dl-service/download?video=${videoId}`)
+  fetch(`${youtubeDlUrl}/download?video=${videoId}`)
   .then(resp => resp.blob());
 
 
