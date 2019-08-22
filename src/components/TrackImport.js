@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { useActions, useLoader, useStatePath } from '../stateUtils';
 import LoaderButton from './LoaderButton';
 
 export default function TrackImport() {
   const playlists = useStatePath('playlists');
-  const { importTracks } = useActions();
-  const [ _importTracks, { loading, error } ] = useLoader(importTracks);
   const [ text, setText ] = useState('');
+  const { importTracks, setModal } = useActions();
+  const [ _importTracks, { loading, error } ] =
+    useLoader(() => importTracks(text).then(() => setModal(null)));
+
+  useEffect(() => {
+    if (error) {
+      console.log(error.message);
+      window.alert(error);
+    }
+  }, [ error ]);
 
   return (
     <div id='track-import-container'>
@@ -15,11 +23,12 @@ export default function TrackImport() {
         <h1>Import Tracks</h1>
         <div>
           <div className='input-button-grp'>
-            <input type="text" value={text} onChange={e => setText(e.target.value)} placeholder='Video or Playlist URL' />
+            <input type="text" value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder='Video or Playlist URL'
+            />
             <button
-              onClick={() =>
-                _importTracks(text)
-                .then(() => setText(''))}
+              onClick={_importTracks}
               disabled={text.length === 0 || loading}
             >
               { error
@@ -40,7 +49,10 @@ export default function TrackImport() {
               <div key={playlist.id}>
                 <div>{ playlist.name }</div>
                 <LoaderButton
-                  action={() => importTracks(`https://www.youtube.com/playlist?list=${playlist.id}`)}
+                  action={() =>
+                    importTracks(`https://www.youtube.com/playlist?list=${playlist.id}`)
+                    .then(() => setModal(null))
+                  }
                   icon='sync' />
               </div>
           )}

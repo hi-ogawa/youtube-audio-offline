@@ -271,8 +271,9 @@ export const useActions = () =>
 // Inspired by "useMutation" from apollo-client
 export const useLoader = (origF /* promise returning function */) => {
   const [state, setState] = useState({ loading: false, error: null });
-  const ref = useRef(null);
-  if (!ref.current) {
+  const refOrigF = useRef(null);
+  const refF = useRef(null);
+  if (refOrigF.current !== origF) {
     function newF() {
       setState({ loading: true, error: null });
       return origF(...arguments).then(
@@ -280,16 +281,17 @@ export const useLoader = (origF /* promise returning function */) => {
           // NOTE: If "origF" caused the component to be unmounted,
           //       then this "setState" leads to warning.
           setState({ loading: false, error: null });
-          return val;
+          return { value: val, error: null };
         },
         (err) => {
           setState({ loading: false, error: err });
+          return { value: null, error: err };
         }
       );
     }
-    ref.current = newF;
+    refF.current = newF;
   }
-  return [ ref.current, state ];
+  return [ refF.current, state ];
 }
 
 export const reducer = (state, action) =>

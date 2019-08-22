@@ -1,18 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLoader } from '../stateUtils';
 
 export default function LoaderButton(props) {
-  const { action, icon, children, ...rest } = props;
+  const { action, icon, container, ...rest } = props;
   const [ _action, { loading, error } ] = useLoader(action);
 
+  useEffect(() => {
+    if (error) {
+      window.alert(error);
+    }
+  }, [ error ]);
+
+  const Klass = container || 'div';
+
   return (
-    <div onClick={_action} {...rest}>
+    <Klass onClick={_action} {...rest} >
       { error
         ? <i className='material-icons'>error</i>
         : loading
         ? <div className='spinner' />
         : <i className='material-icons'>{icon}</i>
       }
-    </div>
+    </Klass>
   );
 }
