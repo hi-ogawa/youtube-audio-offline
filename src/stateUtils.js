@@ -217,6 +217,9 @@ export const actions = {
     AudioManager.setBlob(blob)
     await AudioManager.play();
     U(D)({ player: { status: { $set: 'PLAYING' } } });
+
+    const { title } = selectors.currentTrack(S());
+    document.title = title;
   },
   unpause: () => async (D, S) => {
     await AudioManager.play();
