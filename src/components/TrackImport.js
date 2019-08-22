@@ -12,7 +12,6 @@ export default function TrackImport() {
 
   useEffect(() => {
     if (error) {
-      console.log(error.message);
       window.alert(error);
     }
   }, [ error ]);

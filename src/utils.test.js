@@ -1,4 +1,13 @@
-import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, getAudioData } from './utils';
+import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo } from './utils';
+import fs from 'fs';
+
+const readFile = (path) => new Promise(resolve => {
+  fs.readFile(path, (__, data) => resolve(data.toString()));
+});
+
+const mockFetch = (text) => {
+  fetch = jest.fn().mockReturnValue(Promise.resolve({ ok: true, text: () => Promise.resolve(text) }));
+}
 
 it('parseYoutubeUrl', () => {
   let url = 'https://www.youtube.com/watch?v=GkNSbmv6QMQ';
@@ -14,7 +23,10 @@ it('parseYoutubeUrl', () => {
   });
 });
 
-it('getYoutubeVideoInfo', () => {
+it('getYoutubeVideoInfo', async () => {
+  const text = await readFile('src/fixtures/video.html');
+  mockFetch(text);
+
   const id = 'GkNSbmv6QMQ';
   return getYoutubeVideoInfo(id).then(data => {
     expect(data).toEqual({
@@ -25,7 +37,10 @@ it('getYoutubeVideoInfo', () => {
   })
 });
 
-it('getYoutubePlaylistInfo', () => {
+it('getYoutubePlaylistInfo', async () => {
+  const text = await readFile('src/fixtures/playlist.html');
+  mockFetch(text);
+
   const id = 'PL7sA_SkHX5ye2Q1BxeMA5SHZOtYJzBxkX';
   return getYoutubePlaylistInfo(id).then(data => {
     expect(data).toEqual({
@@ -39,11 +54,6 @@ it('getYoutubePlaylistInfo', () => {
       ]
     });
   })
-});
-
-it('getAudioData', () => {
-  // return getAudioData('GkNSbmv6QMQ').then(data => {
-  // });
 });
 
 it('update', () => {

@@ -7,20 +7,15 @@ import { sprintf } from 'sprintf-js';
 // Miscellaneous //
 ///////////////////
 
-const CORS_PROXY_URLS = ['https://cors-anywhere.herokuapp.com', 'https://ytsub-proxy.herokuapp.com']
-
-const lazyOr = (funcs) =>
-  funcs.length === 0 ? Promise.reject : funcs[0]().catch(() => lazyOr(_.tail(funcs)));
+const PROXY_PREFIX =
+  'https://script.google.com/macros/s/AKfycbwlRhtH1THiHcTY0hbZtcMd1K_ucndHfa-8iugHJMgaKjDY2HqoJbMAACMIITNeMNpZ/exec?url=';
 
 const fetchText = (...args) => fetch(...args).then(resp => {
   if (!resp.ok) { throw new Error(); }
   return resp.text();
 });
 
-const proxyFetchText = (url, options) => {
-  let funcs = CORS_PROXY_URLS.map(proxy_url => () => fetchText(`${proxy_url}/${url}`, options));
-  return lazyOr(funcs);
-}
+const proxyFetchText = (url, ...args) => fetchText(`${PROXY_PREFIX}${url}`, ...args);
 
 export const formatTime = (_sec) => {
   const sec = _sec || 0;
@@ -58,37 +53,27 @@ const extractVideoInfo = (content) => {
   return _.pick(player_response.videoDetails, ['videoId', 'author', 'title']);
 }
 
+// For a user agent "Mozilla/5.0 (compatible; Google-Apps-Script)"
 const extractPlaylistInfo = (content) => {
-  const m = content.match(/window\["ytInitialData"\] = ({.+?});\s*window\["ytInitialPlayerResponse"\]/);
-  const obj = JSON.parse(m[1]);
-  const name = obj.sidebar.playlistSidebarRenderer.items[0].playlistSidebarPrimaryInfoRenderer.title.runs[0].text;
-  const list = obj.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0].playlistVideoListRenderer.contents;
+  const document = (new DOMParser()).parseFromString(content, 'text/html')
+  const name = document.querySelector('.pl-header-title').textContent.trim();
+  const nodes = Array.from(document.querySelectorAll('.pl-video'));
   return {
-    name: name,
-    videos: list.map(elem => ({
-      videoId: elem.playlistVideoRenderer.videoId,
-      title:   elem.playlistVideoRenderer.title.simpleText,
-      author:  elem.playlistVideoRenderer.shortBylineText.runs[0].text
+    name,
+    videos: nodes.map(node => ({
+      videoId: node.getAttribute('data-video-id'),
+      title:   node.getAttribute('data-title'),
+      author:  node.querySelector('.pl-video-owner a').textContent.trim()
     }))
-  }
+  };
 }
 
 export const getYoutubeVideoInfo = (id) =>
-  proxyFetchText(`https://www.youtube.com/watch?v=${id}`, {
-    headers: {
-      'Accept-Language': 'en-US,en',
-      // For node based testing to work (i.e. jest and jsdom)
-      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36'
-    } })
+  proxyFetchText(`https://www.youtube.com/watch?v=${id}`)
   .then(extractVideoInfo);
 
 export const getYoutubePlaylistInfo = (id) =>
-  proxyFetchText(`https://www.youtube.com/playlist?list=${id}`, {
-    headers: {
-      'Accept-Language': 'en-US,en',
-      // For node based testing (i.e. jest and jsdom)
-      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.100 Safari/537.36'
-    } })
+  proxyFetchText(`https://www.youtube.com/playlist?list=${id}`)
   .then(extractPlaylistInfo);
 
 const youtubeDlUrl =

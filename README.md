@@ -3,7 +3,6 @@ Youtube Audio Offline
 
 TODO
 
-- Immer based reducer
 - Put all downloaded track into queue
 - Download all track data at once
 - Remove track
