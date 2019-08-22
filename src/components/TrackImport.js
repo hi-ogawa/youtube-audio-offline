@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
-import gql from 'graphql-tag';
 
-import { useActions, useLoader, useGQL } from '../stateUtils';
+import { useActions, useLoader, useStatePath } from '../stateUtils';
 import LoaderButton from './LoaderButton';
 
-const Q1 = gql`{
-  playlists {
-    id, name
-  }
-}`;
-
 export default function TrackImport() {
-  const { playlists } = useGQL(Q1);
+  const playlists = useStatePath('playlists');
   const { importTracks } = useActions();
   const [ _importTracks, { loading, error } ] = useLoader(importTracks);
   const [ text, setText ] = useState('');

@@ -1,21 +1,12 @@
 import React from 'react';
-import gql from 'graphql-tag';
 import _ from 'lodash';
 
-import { useActions, useGQL } from '../stateUtils';
+import { useActions, useStatePath } from '../stateUtils';
 import LoaderButton from './LoaderButton';
 
-const Q = gql`
-{
-  tracks {
-    id, title, author, audioReady
-  }
-  trackListMode
-}
-`;
-
 export default function TrackList() {
-  const { tracks, trackListMode } = useGQL(Q);
+  const trackListMode = useStatePath('trackListMode');
+  const tracks = useStatePath('tracks');
   const { setModal, downloadAudioData, queueTrack } = useActions();
 
   let orderedTracks = _.sortBy(tracks, t => t.title);

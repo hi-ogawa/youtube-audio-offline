@@ -1,16 +1,9 @@
 import React from 'react';
-import gql from 'graphql-tag';
 
-import { useActions, useGQL } from '../stateUtils';
-
-const Q = gql`
-{
-  trackListMode
-}
-`;
+import { useActions, useStatePath } from '../stateUtils';
 
 export default function Header() {
-  const { trackListMode } = useGQL(Q);
+  const trackListMode =  useStatePath('trackListMode');
   const { setModal, _U } = useActions();
 
   return (

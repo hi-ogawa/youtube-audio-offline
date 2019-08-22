@@ -1,24 +1,17 @@
 import React from 'react';
-import gql from 'graphql-tag';
+import { useSelector } from 'react-redux';
 import CN from 'classnames';
 
-import { useGQL } from '../stateUtils';
-import { useActions } from '../stateUtils';
-
-const Q1 = gql`{
-  player {
-    status, currentIndex
-  }
-
-  queuedTracks {
-    id, title, author
-  }
-}`;
+import { useActions, useStatePath, selectors } from '../stateUtils';
 
 export default function PlayQueue() {
-  const { player: { status, currentIndex }, queuedTracks } = useGQL(Q1);
-  const { unpause, pause, setCurrentTrackFromQueueByIndex, removeTrackFromQueueByIndex, moveCurrentTrack } = useActions();
-  const currentTrack = queuedTracks[currentIndex];
+  const status = useStatePath('player.status');
+  const currentIndex = useStatePath('player.currentIndex');
+  const queuedTracks = useSelector(selectors.queuedTracks);
+  const currentTrack = useSelector(selectors.currentTrack);
+
+  const { unpause, pause, setCurrentTrackFromQueueByIndex,
+          removeTrackFromQueueByIndex, moveCurrentTrack } = useActions();
 
   return (
     <div id='play-queue-container'>
@@ -57,8 +50,7 @@ export default function PlayQueue() {
           disabled={!currentTrack}
         >
           <i className='material-icons'>
-            { status === 'PLAYING' && 'pause' }
-            { status === 'STOPPED' && 'play_arrow' }
+            { status === 'PLAYING' ? 'pause' : 'play_arrow' }
           </i>
         </div>
         <div

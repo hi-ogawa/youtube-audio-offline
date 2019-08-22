@@ -3,7 +3,7 @@ Youtube Audio Offline
 
 TODO
 
-- Deal with unnecesarily rerender
+- Immer based reducer
 - Put all downloaded track into queue
 - Download all track data at once
 - Remove track
@@ -11,17 +11,14 @@ TODO
 - Eject create-react-app and setup hot-loader
 
 
-Objectives
+Secondary Objectives
 
 - Play with create-react-app, yarn
 - Play with apollo-client, graphql
 - React, Redux and Typescript
-- Client-only graphql-based state getter/setter
-  - https://github.com/graphql/graphql-js
-  - https://github.com/apollographql/graphql-tools
-  - https://github.com/rse/graphql-tools-types
 
 
 References
 
 - https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
+- https://github.com/baptistemanson/immutable-path

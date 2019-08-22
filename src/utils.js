@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { Context } from 'immutability-helper';
+import { sprintf } from 'sprintf-js';
 
 
 ///////////////////
@@ -19,6 +20,13 @@ const fetchText = (...args) => fetch(...args).then(resp => {
 const proxyFetchText = (url, options) => {
   let funcs = CORS_PROXY_URLS.map(proxy_url => () => fetchText(`${proxy_url}/${url}`, options));
   return lazyOr(funcs);
+}
+
+export const formatTime = (_sec) => {
+  const sec = _sec || 0;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return sprintf('%d:%02d', m, s);
 }
 
 

@@ -1,29 +1,13 @@
 import React from 'react';
-import gql from 'graphql-tag';
-import { sprintf } from 'sprintf-js';
+import { useSelector } from 'react-redux';
 
-import { useGQL, useActions } from '../stateUtils';
-
-const Q1 = gql`{
-  player {
-    currentIndex, status, currentTime
-  }
-  queuedTracks {
-    id, title, author
-  }
-}`;
-
-const formatTime = (_sec) => {
-  const sec = _sec || 0;
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return sprintf('%d:%02d', m, s);
-}
+import { useActions, useStatePath, selectors } from '../stateUtils';
+import { formatTime } from '../utils';
 
 export default function Player() {
-  const { player: { status, currentTime, currentIndex }, queuedTracks } = useGQL(Q1);
+  const status = useStatePath('player.status');
+  const currentTrack = useSelector(selectors.currentTrack);
   const { setModal, unpause, pause } = useActions();
-  const currentTrack = queuedTracks[currentIndex];
 
   return (
     <div id='player'>
@@ -37,7 +21,7 @@ export default function Player() {
         }
       </div>
       <div>
-        { formatTime(currentTime) }
+        <CurrentTime />
       </div>
       <div
         onClick={() =>
@@ -50,8 +34,7 @@ export default function Player() {
         disabled={!currentTrack}
       >
         <i className='material-icons'>
-          { status === 'PLAYING' && 'pause' }
-          { status === 'STOPPED' && 'play_arrow' }
+          { status === 'PLAYING' ? 'pause' : 'play_arrow' }
         </i>
       </div>
       <div onClick={() => setModal('PlayQueue')}>
@@ -59,4 +42,10 @@ export default function Player() {
       </div>
     </div>
   );
+}
+
+// Make frequent re-rendering PureComponent as small as possible
+function CurrentTime() {
+  const currentTime =  useStatePath('player.currentTime');
+  return formatTime(currentTime);
 }

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import { bindActionCreators } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
+import { createSelector } from 'reselect';
 import objectPath from "object-path";
 import _ from 'lodash';
 import localforage from 'localforage';
-import graphql from 'graphql-anywhere';
+import { fromEvent } from 'rxjs';
+import { throttleTime } from 'rxjs/operators';
 
 import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, getAudioData } from "./utils";
 import AudioManager from './AudioManager';
@@ -44,17 +46,26 @@ export const initialState = {
   },
 };
 
+const statePath = _.memoize((path) => (S) => objectPath.get(S, path));
+
+export const useStatePath = (path) => useSelector(statePath(path));
+
 export const selectors = {
-  statePath: (path) => (S) =>
-    objectPath.get(S, path),
+  currentTrackId: ({ player: { currentIndex, queuedTrackIds } }) =>
+    queuedTrackIds[currentIndex],
 
-  getTrack: (trackId) => (S) =>
-    _.find(S.tracks, { id: trackId }),
+  currentTrack: createSelector(
+    statePath('player.currentIndex'),
+    statePath('player.queuedTrackIds'),
+    statePath('tracks'),
+    (index, ids, tracks) => tracks.find(t => t.id === ids[index])
+  ),
 
-  getPlayerTrack: () => (S) => {
-    const { player: { currentIndex, queuedTrackIds } } = S;
-    return selectors.getTrack(queuedTrackIds[currentIndex])(S);
-  },
+  queuedTracks: createSelector(
+    statePath('player.queuedTrackIds'),
+    statePath('tracks'),
+    (ids, tracks) => ids.map(id => tracks.find(t => t.id === id))
+  )
 }
 
 export const actions = {
@@ -227,18 +238,24 @@ export const setupWithStore = async (store) => {
 
 const initializeAudioManager = (store) => {
   AudioManager.initialize();
-  AudioManager.addEventListener('timeupdate', (e) => {
+
+  fromEvent(AudioManager.el, 'timeupdate').pipe(throttleTime(800))
+  .subscribe(e => {
     const time = e.target.currentTime;
-    store.dispatch(
-      actions._U({ player: { currentTime: { $set: time } } })
-    );
+    store.dispatch(actions._U({
+      player: { currentTime: { $set: time } }
+    }));
   });
-  AudioManager.addEventListener('durationchange', (e) => {
-    store.dispatch(
-      actions._U({ player: { duration: { $set: e.target.duration } } })
-    );
+
+  fromEvent(AudioManager.el, 'durationchange')
+  .subscribe(e => {
+    store.dispatch(actions._U({
+      player: { duration: { $set: e.target.duration } }
+    }));
   });
-  AudioManager.addEventListener('ended', () => {
+
+  fromEvent(AudioManager.el, 'ended')
+  .subscribe(e => {
     store.dispatch(actions.moveCurrentTrack(+1));
   });
 }
@@ -248,30 +265,8 @@ const U = (D) => (command) => D({
   command
 });
 
-const resolverQuery = {
-  track: (__, { id }, { tracks }) =>
-    _.find(tracks, { id }),
-
-  queuedTracks: (__, ___, { player: { queuedTrackIds }, tracks }) =>
-    queuedTrackIds.map(id => _.find(tracks, { id }))
-}
-
-// TODO: Use graphql-tools instead essentially all actions can be just resolvers
-export const resolverAnywhere = (fieldName, rootValue, args, state) =>
-  resolverQuery[fieldName]
-  ? resolverQuery[fieldName](null, args, state)
-  : rootValue[fieldName];
-
-export const useGQL = (query, variables) =>
-  useSelector(state => graphql(resolverAnywhere, query, state, state, variables));
-
 export const useActions = () =>
   bindActionCreators(actions, useDispatch());
-
-export const useSelectors = () =>
-  _.mapValues(selectors, (selector) => (args) =>
-    useSelector(state => selector(args)(state)) // eslint-disable-line react-hooks/rules-of-hooks
-  );
 
 // Inspired by "useMutation" from apollo-client
 export const useLoader = (origF /* promise returning function */) => {
