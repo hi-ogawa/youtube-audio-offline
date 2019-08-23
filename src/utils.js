@@ -24,6 +24,10 @@ export const formatTime = (_sec) => {
   return sprintf('%d:%02d', m, s);
 }
 
+export const stopProp = (f) => (e) => {
+  e.stopPropagation();
+  return f(e);
+}
 
 ///////////////////////////
 // Youtube site scraping //

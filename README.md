@@ -18,6 +18,7 @@ TODO
 - Streaming play
 - Eject create-react-app and setup hot-loader
 - Setup create-react-app default service worker for offline
+- gracefully stop/change tracks (i.e. no spiky noise)
 
 
 Secondary Objectives

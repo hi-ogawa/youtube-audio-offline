@@ -181,14 +181,22 @@ export const actions = {
       }
     });
   },
-  queueTrack: (id, andPlay) => async (D, S) => {
-    const index = S().player.queuedTrackIds.length;
-    U(D)({
-      player: {
-        queuedTrackIds: { $push: [ id ] }
-      }
-    });
-    if (andPlay) {
+  queueTrack: (id, opts={ play: false, clear: false }) => async (D, S) => {
+    if (opts.clear) {
+      U(D)({
+        player: {
+          queuedTrackIds: { $set: [ id ] }
+        }
+      });
+    } else {
+      U(D)({
+        player: {
+          queuedTrackIds: { $push: [ id ] }
+        }
+      });
+    }
+    if (opts.play) {
+      const index = S().player.queuedTrackIds.length - 1;
       D(actions.setCurrentTrackFromQueueByIndex(index));
     }
   },

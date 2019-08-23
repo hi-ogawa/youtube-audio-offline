@@ -28,7 +28,7 @@ export default function PlayQueue() {
                 <div>{ track.title }</div>
                 <div>{ track.author }</div>
               </div>
-              <div onClick={e => { e.stopPropagation(); removeTrackFromQueueByIndex(index); }}>
+              <div onClick={stopProp(() => removeTrackFromQueueByIndex(index))}>
                 <i className='material-icons'>close</i>
               </div>
             </div>
