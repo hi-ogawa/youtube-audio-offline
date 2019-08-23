@@ -231,6 +231,7 @@ export const actions = {
   },
   seek: (time) => async (D, S) => {
     await AudioManager.seek(time);
+    U(D)({ player: { currentTime: { $set: time } } });
   },
 }
 

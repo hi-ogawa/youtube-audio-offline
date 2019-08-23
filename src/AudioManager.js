@@ -77,7 +77,7 @@ class AudioManagerSingleton {
   }
 
   async seek(time) {
-    this.el.fastseek(time);
+    this.el.currentTime = time;
     await this.wait('seeked');
   }
 

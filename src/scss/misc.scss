@@ -8,12 +8,15 @@ body {
   font-family: "Roboto";
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 2px;
-}
-:hover::-webkit-scrollbar-thumb {
-  background: hsla(0, 0%, 50%, 0.5);
+// Use custom scrollbar only on desktop
+@media (min-width: $bp-sm) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 2px;
+  }
+  :hover::-webkit-scrollbar-thumb {
+    background: hsla(0, 0%, 50%, 0.5);
+  }
 }
 
 i {
@@ -21,7 +24,7 @@ i {
 }
 
 .disabled, *[disabled] {
-  i {
+  > i {
     color: $grey-4
   }
 }

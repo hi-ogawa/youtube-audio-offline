@@ -9,7 +9,7 @@ export default function Header() {
   return (
     <div id='header'>
       <div onClick={() => setModal('Saver')}>
-        <i className='material-icons'>save</i>
+        <i className='material-icons-sharp'>save</i>
       </div>
       {
         trackListMode === 'FLAT'

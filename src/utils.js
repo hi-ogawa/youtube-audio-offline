@@ -85,6 +85,8 @@ export const getAudioData = (videoId) =>
   fetch(`${youtubeDlUrl}/download?video=${videoId}`)
   .then(resp => resp.blob());
 
+export const fetchWithProgress = () => {
+}
 
 ///////////////////////////////////
 // Customize immutability-helper //

@@ -3,10 +3,19 @@ Youtube Audio Offline
 
 TODO
 
+- Download progress bar and cancellability
+- Hide "save session" interface for user
+  - auto saving +
+    auto loading on startup
+- Simple login system with
+  - zeit-now function + heroku postgres
+  - or firebase
+- Remove audio data and track
+- show storage usage
+- Call-to-action when no tracks
 - Put all downloaded track into queue
-- Download all track data at once
-- Remove track
-- Player progress bar
+- Download all track data sequentially
+- Streaming play
 - Eject create-react-app and setup hot-loader
 - Setup create-react-app default service worker for offline
 

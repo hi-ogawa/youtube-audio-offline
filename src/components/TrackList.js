@@ -1,14 +1,17 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 
-import { useActions, useStatePath } from '../stateUtils';
+import { useActions, useStatePath, selectors } from '../stateUtils';
 import LoaderButton from './LoaderButton';
 
 export default function TrackList() {
   const trackListMode = useStatePath('trackListMode');
   const tracks = useStatePath('tracks');
+  const currentTrack = useSelector(selectors.currentTrack);
   const { setModal, downloadAudioData, queueTrack } = useActions();
 
+  // TODO: cache better
   let orderedTracks = _.sortBy(tracks, t => t.title);
   let groupedTracks = _.sortBy(_.toPairs(_.groupBy(orderedTracks, t => t.author)), pair => pair[0]);
 
@@ -17,22 +20,24 @@ export default function TrackList() {
       { trackListMode === 'FLAT' &&
         <FlatList {...{
           tracks: orderedTracks,
+          currentTrack,
           setModal,
           downloadAudioData,
-          queueTrack
+          queueTrack,
         }}/>}
       { trackListMode === 'GROUP' &&
         <GroupedList {...{
           groupedTracks,
+          currentTrack,
           setModal,
           downloadAudioData,
-          queueTrack
+          queueTrack,
         }}/>}
     </div>
   );
 }
 
-function FlatList({ tracks, setModal, downloadAudioData, queueTrack }) {
+function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrack }) {
   return (
     <div id='flat-list'>
       { tracks.map(track =>
@@ -44,8 +49,8 @@ function FlatList({ tracks, setModal, downloadAudioData, queueTrack }) {
 
             { track.audioReady
               ?
-              <div className='list-entry__action' onClick={() => queueTrack(track.id, true)}>
-                <i className='material-icons'>play_arrow</i>
+              <div className='list-entry__action' onClick={() => queueTrack(track.id, !currentTrack)}>
+                <i className='material-icons'>add</i>
               </div>
               :
               <LoaderButton
@@ -63,7 +68,7 @@ function FlatList({ tracks, setModal, downloadAudioData, queueTrack }) {
   );
 }
 
-function GroupedList({ groupedTracks, setModal, downloadAudioData, queueTrack }) {
+function GroupedList({ groupedTracks, currentTrack, setModal, downloadAudioData, queueTrack }) {
   return (
     <div id='grouped-list'>
       { groupedTracks.map(([author, tracks]) =>
@@ -71,13 +76,13 @@ function GroupedList({ groupedTracks, setModal, downloadAudioData, queueTrack })
             <div>{ author }</div>
             <div>
               { tracks.map(track =>
-                  <div key={track.id}>
+                  <div key={track.id} disabled={!track.audioReady}>
                     <div>{ track.title }</div>
 
                     { track.audioReady
                       ?
-                      <div onClick={() => queueTrack(track.id, true)}>
-                        <i className='material-icons'>play_arrow</i>
+                      <div onClick={() => queueTrack(track.id, !currentTrack)}>
+                        <i className='material-icons'>add</i>
                       </div>
                       :
                       <LoaderButton
