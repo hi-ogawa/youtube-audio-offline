@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import CN from 'classnames';
 
 import { useActions, useStatePath, selectors } from '../stateUtils';
-import { formatTime } from '../utils';
+import { formatTime, stopProp } from '../utils';
 
 export default function PlayQueue() {
   const status = useStatePath('player.status');
@@ -90,9 +90,13 @@ function SeekSliderWrapper() {
   return <SeekSlider {...props} />;
 }
 
+
 // The "value" has sort of "uncontrolled"-ness, i.e. prop update will be ignored during:
 // - dragging
 // - onSeek promise is resolving
+//
+// TODO:
+// - Handle touch device (onTouchEnd onTouchMove onTouchStart)
 function SeekSlider({ begin, end, value, format, fraction2value, value2fraction, onSeek }) {
   const draggingDisabled = begin === end;
   const propFraction = value2fraction(value, begin, end);
@@ -148,16 +152,16 @@ function SeekSlider({ begin, end, value, format, fraction2value, value2fraction,
         onMouseUp={handleDrag}
       >
         <div
+          className='seek-slider__track-hightlight'
+          style={{ width: `${fraction * 100}%`}}
+        ></div>
+        <div
           className='seek-slider__thumb'
           style={{ left: `${fraction * 100}%`}}
           onDragStart={(e) => { unsetDragImage(e); handleDrag(e); }}
           onDrag={handleDrag}
           onDragEnd={handleDrag}
           draggable={!draggingDisabled}
-        ></div>
-        <div
-          className='seek-slider__track-hightlight'
-          style={{ width: `${fraction * 100}%`}}
         ></div>
       </div>
       <div className='seek-slider__end'>{ format(end) }</div>

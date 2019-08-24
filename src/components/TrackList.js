@@ -10,7 +10,7 @@ export default function TrackList() {
   const trackListMode = useStatePath('trackListMode');
   const tracks = useStatePath('tracks');
   const currentTrack = useSelector(selectors.currentTrack);
-  const { setModal, downloadAudioData, queueTrack } = useActions();
+  const { setModal, startDownloadAudio, queueTrack } = useActions();
 
   // TODO: cache better
   let orderedTracks = _.sortBy(tracks, t => t.title);
@@ -23,7 +23,7 @@ export default function TrackList() {
           tracks: orderedTracks,
           currentTrack,
           setModal,
-          downloadAudioData,
+          startDownloadAudio,
           queueTrack,
         }}/>}
       { trackListMode === 'GROUP' &&
@@ -31,7 +31,7 @@ export default function TrackList() {
           groupedTracks,
           currentTrack,
           setModal,
-          downloadAudioData,
+          startDownloadAudio,
           queueTrack,
         }}/>}
     </div>
@@ -44,14 +44,14 @@ function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrac
       { tracks.map(track =>
           <div key={track.id} className='list-entry'>
             <div className='list-entry__title'
-              disabled={!track.audioReady}
-              onClick={() => track.audioReady && queueTrack(track.id, { play: true, clear: true })}
+              disabled={!(track.downloadState === 'DONE')}
+              onClick={() => track.downloadState === 'DONE' && queueTrack(track.id, { play: true, clear: true })}
             >
               <div>{ track.title }</div>
               <div>{ track.author }</div>
             </div>
 
-            { track.audioReady
+            { track.downloadState === 'DONE'
               ?
               <div
                 className='list-entry__action'
@@ -75,7 +75,7 @@ function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrac
   );
 }
 
-function GroupedList({ groupedTracks, currentTrack, setModal, downloadAudioData, queueTrack }) {
+function GroupedList({ groupedTracks, currentTrack, setModal, startDownloadAudio, queueTrack }) {
   return (
     <div id='grouped-list'>
       { groupedTracks.map(([author, tracks]) =>
@@ -84,20 +84,25 @@ function GroupedList({ groupedTracks, currentTrack, setModal, downloadAudioData,
             <div>
               { tracks.map(track =>
                   <div key={track.id}
-                    disabled={!track.audioReady}
-                    onClick={() => track.audioReady && queueTrack(track.id, { play: true, clear: true })}
+                    disabled={!(track.downloadState === 'DONE')}
+                    onClick={() => track.downloadState === 'DONE' && queueTrack(track.id, { play: true, clear: true })}
                   >
                     <div>{ track.title }</div>
 
-                    { track.audioReady
+                    { track.downloadState === 'DONE'
                       ?
                       <div onClick={stopProp(() => queueTrack(track.id, { play: !currentTrack }))}>
                         <i className='material-icons'>add</i>
                       </div>
                       :
-                      <LoaderButton
-                        action={stopProp(() => downloadAudioData(track.id))}
-                        icon='get_app' />
+                      <div onClick={stopProp(() => track.downloadState === 'LOADING' || startDownloadAudio(track.id))}>
+                        { track.downloadState === 'LOADING'
+                          ? <div className='spinner' />
+                          : track.downloadState === 'ERROR'
+                            ? <i className='material-icons'>error</i>
+                            : <i className='material-icons'>get_app</i>
+                        }
+                      </div>
                     }
 
                     <div onClick={stopProp(() => setModal('TrackActions'))}>

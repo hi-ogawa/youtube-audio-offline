@@ -1,4 +1,3 @@
-import { useRef, useState } from 'react';
 import { bindActionCreators } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
 import { createSelector } from 'reselect';
@@ -8,7 +7,8 @@ import localforage from 'localforage';
 import { fromEvent } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 
-import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, getAudioData } from "./utils";
+import { parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo,
+         update, getAudioDataObservable } from "./utils";
 import AudioManager from './AudioManager';
 
 // type ID = String;
@@ -16,7 +16,7 @@ import AudioManager from './AudioManager';
 // interface Player {
 //   currentIndex: int,
 //   queuedTrackIds: Array<ID>,
-//   status enum 'PLAYING', 'STOPPED'
+//   status: enum 'PLAYING', 'STOPPED'
 //   currentTime: int
 //   duration: int
 //   audio: Audio
@@ -27,7 +27,7 @@ import AudioManager from './AudioManager';
 //   videoId: string,
 //   title: string,
 //   author: string,
-//   audioReady: boolean,
+//   downloadState: enum 'NOT_STARTED', 'LOADING', 'ERROR', 'CANCELLED', 'DONE'
 // }
 
 export const initialState = {
@@ -40,7 +40,10 @@ export const initialState = {
   },
   tracks: [],
   trackListMode: 'GROUP', // 'FLAT'
-  playlists: [], // { name: string, id: string }
+  playlists: [], // { id: (playlist id), name: string }
+  downloads: [], // { id: (track id), complete: boolean, progress: object, canceller: func, error: object }
+                 // NOTE: we could've put this information in Track but this separation makes it possible to
+                 //       avoid re-rendering TrackList during progress update
   modal: {
     className: null, // cf modalPages in Modal.js
   },
@@ -68,7 +71,7 @@ export const selectors = {
   )
 }
 
-export const actions = {
+const actions = {
   // Dirty shortcut, not supposed to be used much
   _U: (command) => async (D, S) => U(D)(command),
 
@@ -122,7 +125,7 @@ export const actions = {
         videoId: data.videoId,
         title:   data.title,
         author:  data.author,
-        audioReady: false,
+        downloadState: 'NOT_STARTED',
       }]
     } else if (type === 'playlist') {
       const { name, videos } = await getYoutubePlaylistInfo(id);
@@ -136,45 +139,134 @@ export const actions = {
           videoId: v.videoId,
           title:   v.title,
           author:  v.author,
-          audioReady: false,
+          downloadState: 'NOT_STARTED',
       }));
     }
     const oldTrackIds = S().tracks.map(track => track.id);
     tracks = tracks.filter(track => !oldTrackIds.includes(track.id));
     await Promise.all(tracks.map(async t => {
       const value = await localforage.getItem(t.id);
-      t.audioReady = !!value;
+      t.downloadState = value ? 'DONE' : 'NOT_STARTED';
     }));
     U(D)({
       tracks: { $push: tracks }
     });
   },
-  downloadAudioData: (id) => async (D, S) => {
-    await localforage.removeItem(id);
-    const blob = await getAudioData(id);
-    await localforage.setItem(id, blob);
+
+  // Actually "start" or "retry after error" (thus check if entry is there already)
+  startDownloadAudio: (id) => async (D, S) => {
+    const downloads = statePath('downloads')(S());
+    const [observable, canceller] = getAudioDataObservable(id);
     U(D)({
       tracks: {
         $find: {
-          query: { id },
-          op: {
-            $merge: {
-              audioReady: true,
-            }
-          }
+          $query: { id },
+          $op: { $merge: { downloadState: 'LOADING'} }
         }
       }
     });
+    if (_.find(downloads, { id })) {
+      U(D)({
+        downloads: {
+          $find: {
+            $query: { id },
+            $op: { $merge: { complete: false, progress: null, canceller, error: null } }
+          }
+        }
+      });
+    } else {
+      U(D)({
+        downloads: {
+          $push: [{ id, complete: false, progress: null, canceller, error: null }]
+        }
+      });
+    }
+    observable.subscribe(
+      ({ progress, response }) => {
+        if (progress) {
+          U(D)({
+            downloads: {
+              $find: {
+                $query: { id },
+                $op: { $merge: { progress } }
+              }
+            }
+          });
+        }
+        if (response) {
+          (async () => {
+            await localforage.setItem(id, response.data);
+            U(D)({
+              tracks: {
+                $find: {
+                  $query: { id },
+                  $op: { $merge: { downloadState: 'DONE' } }
+                }
+              },
+              downloads: {
+                $find: {
+                  $query: { id },
+                  $op: { $merge: { complete: true, progress: null, canceller: null, error: null } }
+                }
+              }
+            });
+          })();
+        }
+      },
+      (error) => {
+        U(D)({
+          tracks: {
+            $find: {
+              $query: { id },
+              $op: { $merge: { downloadState: error.__CANCEL__ ? 'CANCELLED' : 'ERROR' } }
+            }
+          },
+          downloads: {
+            $find: {
+              $query: { id },
+              $op: { $merge: { complete: false, progress: null, canceller: null, error } }
+            }
+          }
+        });
+      }
+    );
   },
+  cancelDownloadAudio: (id) => async (D, S) => {
+    const downloads = statePath('downloads')(S());
+    const { canceller } = _.find(downloads, { id });
+    console.assert(!!canceller);
+    canceller();
+  },
+  removeDownloadEntry: (id) => async (D, S) => {
+    U(D)({ downloads: { $reject: { id } } });
+  },
+
+  // downloadAudioData: (id) => async (D, S) => {
+  //   await localforage.removeItem(id);
+  //   const blob = await getAudioData(id);
+  //   await localforage.setItem(id, blob);
+  //   U(D)({
+  //     tracks: {
+  //       $find: {
+  //         $query: { id },
+  //         $op: {
+  //           $merge: {
+  //             downloadState: 'DONE',
+  //           }
+  //         }
+  //       }
+  //     }
+  //   });
+  // },
   clearAudioData: (id) => async (D, S) => {
     await localforage.removeItem(id);
     U(D)({
       tracks: {
         $find: {
-          query: { id },
-          op: {
+          $query: { id },
+          $op: {
             $merge: {
-              audioReady: false,
+              downloadState: 'NOT_STARTED',
             }
           }
         }
@@ -279,32 +371,6 @@ const U = (D) => (command) => D({
 
 export const useActions = () =>
   bindActionCreators(actions, useDispatch());
-
-// Inspired by "useMutation" from apollo-client
-export const useLoader = (origF /* promise returning function */) => {
-  const [state, setState] = useState({ loading: false, error: null });
-  const refOrigF = useRef(null);
-  const refF = useRef(null);
-  if (refOrigF.current !== origF) {
-    function newF() {
-      setState({ loading: true, error: null });
-      return origF(...arguments).then(
-        (val) => {
-          // NOTE: If "origF" caused the component to be unmounted,
-          //       then this "setState" leads to warning.
-          setState({ loading: false, error: null });
-          return { value: val, error: null };
-        },
-        (err) => {
-          setState({ loading: false, error: err });
-          return { value: null, error: err };
-        }
-      );
-    }
-    refF.current = newF;
-  }
-  return [ refF.current, state ];
-}
 
 export const reducer = (state, action) =>
   action.type === '$U' ? update(state, action.command) : state;

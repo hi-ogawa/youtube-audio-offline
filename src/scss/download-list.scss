@@ -1,0 +1,67 @@
+#download-list-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  > div:nth-child(1) { // header
+    font-weight: 300;
+    font-size: 21px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+  }
+
+  > div:nth-child(2) { // body (list)
+    flex: 1 1 auto;
+    overflow-y: auto;
+
+    > div { // list entry
+      display: flex;
+      padding: 7px;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+      > div:nth-child(1) { // title
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        cursor: pointer;
+
+        display: flex;
+        flex-direction: column;
+
+        > div {
+          &:nth-child(1) {
+            font-size: 12px;
+            font-weight: 300;
+          }
+          &:nth-child(2) {
+            font-size: 10px;
+            color: $grey-7;
+            margin-top: 4px;
+            margin-left: 1px;
+          }
+        }
+      }
+
+      > div:nth-child(2) { // status message
+        flex: 0 0 auto;
+        margin-left: 7px;
+
+        font-size: 10px;
+        font-weight: 500;
+        color: $grey-7;
+      }
+
+      > div:nth-child(3) { // action
+        cursor: pointer;
+        margin-left: 7px;
+
+        > i {
+          font-size: 20px;
+        }
+      }
+    }
+  }
+}

@@ -3,22 +3,25 @@ Youtube Audio Offline
 
 TODO
 
-- Download progress bar and cancellability
-- Hide "save session" interface for user
-  - auto saving +
-    auto loading on startup
-- Simple login system with
+- Optional simple login system
   - zeit-now function + heroku postgres
-  - or firebase
-- Remove audio data and track
+  - just few apis:
+    - POST /register: client (username, password) <-> server (success, failure, auth token)
+    - POST /auth:     client (username, password) <-> server (success, failure, auth token)
+    - GET  /data:     client (auth token, data) <-> server (username, data)
+    - POST /data:     client (auth token, data) <-> server (username, data)
+  - persisted data is just:
+    - username, hashed_password, single json per user
+- Download audio data sequentially (some queueing logic within redux state)
+- Clear audio data and remove track
 - show storage usage
 - Call-to-action when no tracks
 - Put all downloaded track into queue
-- Download all track data sequentially
 - Streaming play
 - Eject create-react-app and setup hot-loader
 - Setup create-react-app default service worker for offline
 - gracefully stop/change tracks (i.e. no spiky noise)
+- Global error handling system via redux
 
 
 Secondary Objectives
@@ -26,6 +29,7 @@ Secondary Objectives
 - Play with create-react-app, yarn
 - Play with apollo-client, graphql
 - React, Redux and Typescript
+- Storybook
 
 
 References

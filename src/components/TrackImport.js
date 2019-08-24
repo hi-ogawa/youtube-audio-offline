@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-import { useActions, useLoader, useStatePath } from '../stateUtils';
+import { useActions, useStatePath } from '../stateUtils';
+import { useLoader } from '../utils';
 import LoaderButton from './LoaderButton';
 
 export default function TrackImport() {

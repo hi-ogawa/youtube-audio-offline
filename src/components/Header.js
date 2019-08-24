@@ -8,22 +8,25 @@ export default function Header() {
 
   return (
     <div id='header'>
-      <div onClick={() => setModal('Saver')}>
-        <i className='material-icons-sharp'>save</i>
+      <div onClick={() => setModal('DownloadList')}>
+        <i className='material-icons-sharp'>get_app</i>
       </div>
       {
         trackListMode === 'FLAT'
         ?
         <div onClick={() => _U({ trackListMode: { $set: 'GROUP' } })}>
-          <i className='material-icons'>sort_by_alpha</i>
+          <i className='material-icons'>sort</i>
         </div>
         :
         <div onClick={() => _U({ trackListMode: { $set: 'FLAT' } })}>
-          <i className='material-icons'>group</i>
+          <i className='material-icons'>sort</i>
         </div>
       }
       <div onClick={() => setModal('TrackImport')}>
         <i className='material-icons'>playlist_add</i>
+      </div>
+      <div onClick={() => setModal('Saver')}>
+        <i className='material-icons-sharp'>person</i>
       </div>
     </div>
   );
