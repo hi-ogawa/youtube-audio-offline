@@ -81,8 +81,17 @@ class AudioManagerSingleton {
     await this.wait('seeked');
   }
 
+  reset() {
+    this.el.pause();
+    if (this.el.src) {
+      URL.revokeObjectURL(this.el.src);
+    }
+    this.el.src = null;
+  }
+
   setBlob(blob) {
     if (this.el.src) {
+      // assert audio not running
       URL.revokeObjectURL(this.el.src);
     }
     this.currentBlob = blob;

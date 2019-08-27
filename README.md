@@ -1,5 +1,15 @@
 Youtube Audio Offline
 
+```
+# Development
+$ npm start
+
+# Testing
+$ npm test
+
+# Deployment
+$ npm run build:deploy
+```
 
 TODO
 
@@ -22,6 +32,8 @@ TODO
 - Setup create-react-app default service worker for offline
 - gracefully stop/change tracks (i.e. no spiky noise)
 - Global error handling system via redux
+- Organize client storage better
+- Organize styling (especially a bunch of component within modal)
 
 
 Secondary Objectives

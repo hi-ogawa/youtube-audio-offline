@@ -10,16 +10,6 @@ import axios from 'axios';
 // Miscellaneous //
 ///////////////////
 
-const PROXY_PREFIX =
-  'https://script.google.com/macros/s/AKfycbwlRhtH1THiHcTY0hbZtcMd1K_ucndHfa-8iugHJMgaKjDY2HqoJbMAACMIITNeMNpZ/exec?url=';
-
-const fetchText = (...args) => fetch(...args).then(resp => {
-  if (!resp.ok) { throw new Error(); }
-  return resp.text();
-});
-
-const proxyFetchText = (url, ...args) => fetchText(`${PROXY_PREFIX}${url}`, ...args);
-
 export const formatTime = (_sec) => {
   const sec = _sec || 0;
   const m = Math.floor(sec / 60);
@@ -40,6 +30,15 @@ export function formatBytes(bytes, decimals = 2) {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return (bytes / Math.pow(k, i)).toFixed(dm) + ' ' + sizes[i];
+}
+
+export const fromStore = (store) => {
+  const observable = new Observable(subscriber => {
+    store.subscribe(() => {
+      subscriber.next(store.getState());
+    });
+  });
+  return observable;
 }
 
 ///////////////////////////
@@ -70,9 +69,24 @@ const extractVideoInfo = (content) => {
   return _.pick(player_response.videoDetails, ['videoId', 'author', 'title']);
 }
 
+export const extractFormats = (content) => {
+  const mobj = content.match(/;ytplayer\.config\s*=\s*({.+?});ytplayer/);
+  const config = JSON.parse(mobj[1]);
+  const player_response = JSON.parse(config.args.player_response);
+  const formats1 = player_response.streamingData.formats;
+  const formats2 = player_response.streamingData.adaptiveFormats;
+  const fields = ['itag', 'url', 'contentLength', 'mimeType',
+                  'quality', 'qualityLabel', 'audioQuality', 'bitrate', 'audioSampleRate'];
+  return _.map(_.concat(formats1, formats2), f => _.pick(f, fields));
+}
+
+// Not sure which one is the "best", so just something worked so far.
+export const chooseFormat = (formats) =>
+  formats.find(f => f.mimeType.match('audio/webm') && f.audioQuality !== 'AUDIO_QUALITY_LOW')
+
 // For a user agent "Mozilla/5.0 (compatible; Google-Apps-Script)"
 const extractPlaylistInfo = (content) => {
-  const document = (new DOMParser()).parseFromString(content, 'text/html')
+  const document = (new DOMParser()).parseFromString(content, 'text/html');
   const name = document.querySelector('.pl-header-title').textContent.trim();
   const nodes = Array.from(document.querySelectorAll('.pl-video'));
   return {
@@ -85,25 +99,61 @@ const extractPlaylistInfo = (content) => {
   };
 }
 
+const createUrl = (url, searchParams) => {
+  const urlObj = new URL(url);
+  _.forOwn(searchParams, (value, key) => {
+    urlObj.searchParams.set(key, value);
+  });
+  return urlObj;
+};
+
+// TODO: such a mess
+const PROXY_URL_V1 = 'https://script.google.com/macros/s/AKfycbwlRhtH1THiHcTY0hbZtcMd1K_ucndHfa-8iugHJMgaKjDY2HqoJbMAACMIITNeMNpZ/exec';
+const PROXY_URL_V2 = 'http://localhost:8080/proxy';
+
 export const getYoutubeVideoInfo = (id) =>
-  proxyFetchText(`https://www.youtube.com/watch?v=${id}`)
+  fetch(createUrl(PROXY_URL_V1, { url: `https://www.youtube.com/watch?v=${id}` }))
+  .then(resp => resp.text())
   .then(extractVideoInfo);
 
 export const getYoutubePlaylistInfo = (id) =>
-  proxyFetchText(`https://www.youtube.com/playlist?list=${id}`)
+  fetch(createUrl(PROXY_URL_V1, { url: `https://www.youtube.com/playlist?list=${id}` }))
+  .then(resp => resp.text())
   .then(extractPlaylistInfo);
 
-const youtubeDlUrl =
+const YOUTUBE_DL_URL =
   process.env.NODE_ENV === 'production'
   ? 'https://youtube-dl-service.herokuapp.com'
   : 'http://localhost:3001';
 
-export const getAudioData = (videoId) =>
-  fetch(`${youtubeDlUrl}/download?video=${videoId}`)
+export const getYoutubeAudioDataUrl = (id) =>
+  Promise.resolve(`${YOUTUBE_DL_URL}/download?video=${id}`)
+
+export const getYoutubeAudioData = (id) =>
+  getYoutubeAudioDataUrl(id)
+  .then(fetch)
   .then(resp => resp.blob());
 
-export const getAudioDataObservable = (videoId) =>
-  fromAxiosGet(`${youtubeDlUrl}/download?video=${videoId}`, { responseType: 'blob' });
+export const getYoutubeVideoInfo_V2 = (id) =>
+  fetch(createUrl(PROXY_URL_V2, { type: 'video', payload: id }))
+  .then(resp => resp.text())
+  .then(extractVideoInfo);
+
+export const getYoutubePlaylistInfo_V2 = (id) =>
+  fetch(createUrl(PROXY_URL_V2, { type: 'playlist', payload: id }))
+  .then(resp => resp.text())
+  .then(extractPlaylistInfo);
+
+export const getYoutubeFormats_V2 = (id) =>
+  fetch(createUrl(PROXY_URL_V2, { type: 'video', payload: id }))
+  .then(resp => resp.text())
+  .then(extractFormats);
+
+// V2 (backend without youtube-dl) isn't working perfectly yet
+export const getYoutubeAudioDataUrl_V2 = (id) =>
+  getYoutubeFormats_V2(id)
+  .then(formats =>
+    createUrl(PROXY_URL_V2, { type: 'data', payload: chooseFormat(formats).url }));
 
 
 //////////////////
@@ -139,6 +189,27 @@ export const useLoader = (origF /* promise returning function */) => {
   }
   return [ refF.current, state ];
 }
+
+export const useLoader_V2 = (origF /* promise returning function */) => {
+  const [state, setState] = useState({ loading: false, error: null });
+  function newF() {
+    setState({ loading: true, error: null });
+    return origF(...arguments).then(
+      (val) => {
+        // NOTE: If "origF" caused the component to be unmounted,
+        //       then this "setState" leads to warning.
+        setState({ loading: false, error: null });
+        return { value: val, state };
+      },
+      (err) => {
+        setState({ loading: false, error: err });
+        return { value: null, state };
+      }
+    );
+  }
+  return [ newF, state ];
+}
+
 
 // NOTE:
 // - Probably generalizable to "progressable" and "cancellable" promise or something...
@@ -182,7 +253,7 @@ export const useAxiosGet = () => {
 // - to get response, subscribe to "observable.pipe(last, map(obj => obj.response))"
 // - to get progress, subscribe to "observable.pipe(map(obj => obj.progress), takeWhile(x => x))"
 // - error.__CANCEL__ indicates that cancel() is called
-const fromAxiosGet = (url, config = {}) => {
+export const fromAxiosGet = (url, config = {}) => {
   const { token, cancel } = axios.CancelToken.source();
   const observable = new Observable(subscriber => {
     const promise = axios.get(url, _.extend(config, {
@@ -233,18 +304,19 @@ export const useObservable = (origF) => { // any => Observable<any>
 ///////////////////////////////////
 
 export const update = (new Context()).update;
+update.defineCustomQuery = () => {
+  // TODO: Generalizable to all the lodash method using "_.matches iteratee shorthand." ??
+  // Operate on element chosen by "query" from array
+  update.extend('$find', ({ $query, $op }, originalArray) => {
+    const index = _.findIndex(originalArray, $query);
+    return update(originalArray, { [index]: $op });
+  });
 
-// TODO: Generalizable to all the lodash method using "_.matches iteratee shorthand." ??
-// Operate on element chosen by "query" from array
-update.extend('$find', ({ $query, $op }, originalArray) => {
-  const index = _.findIndex(originalArray, $query);
-  return update(originalArray, { [index]: $op });
-});
+  update.extend('$filter', (query, originalArray) => {
+    return _.filter(originalArray, query);
+  });
 
-update.extend('$filter', (query, originalArray) => {
-  return _.filter(originalArray, query);
-});
-
-update.extend('$reject', (query, originalArray) => {
-  return _.reject(originalArray, query);
-});
+  update.extend('$reject', (query, originalArray) => {
+    return _.reject(originalArray, query);
+  });
+}

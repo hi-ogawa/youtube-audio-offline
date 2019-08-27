@@ -8,8 +8,12 @@ export default function Header() {
 
   return (
     <div id='header'>
+      {/* TODO: Only for development */}
+      <div onClick={() => setModal('Saver')}>
+        <i className='material-icons-sharp'>save</i>
+      </div>
       <div onClick={() => setModal('DownloadList')}>
-        <i className='material-icons-sharp'>get_app</i>
+        <i className='material-icons'>get_app</i>
       </div>
       {
         trackListMode === 'FLAT'
@@ -25,8 +29,8 @@ export default function Header() {
       <div onClick={() => setModal('TrackImport')}>
         <i className='material-icons'>playlist_add</i>
       </div>
-      <div onClick={() => setModal('Saver')}>
-        <i className='material-icons-sharp'>person</i>
+      <div onClick={() => setModal('UserPage')}>
+        <i className='material-icons'>person</i>
       </div>
     </div>
   );

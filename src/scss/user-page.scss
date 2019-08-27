@@ -1,0 +1,174 @@
+#login-container, #register-container, #user-account-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  > div:nth-child(1) { // header
+    font-weight: 300;
+    font-size: 21px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+  }
+}
+
+#login-container, #register-container {
+  > div:nth-child(2) { // body
+    padding: 15px;
+
+    > * {
+      margin-bottom: 10px;
+    }
+
+    > div:nth-child(1), div:nth-child(2) { // input field
+      > div:nth-child(1) { // label
+        font-weight: 500;
+        color: grey;
+        margin-bottom: 5px;
+      }
+      > div:nth-child(2) { // input
+        border: 1px solid grey;
+      }
+    }
+
+    > div:nth-child(3) { // action
+      display: flex;
+
+      > div {
+        padding: 6px;
+        background: grey;
+        box-shadow: 0 0px 3px 0px rgba(0, 0, 0, 0.3);
+        color: white;
+        font-weight: 500;
+        font-size: 13px;
+        cursor: pointer;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .spinner {
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          border-width: 1px;
+          visibility: hidden;
+        }
+        &.loading {
+          .spinner {
+            visibility: initial;
+          }
+          span {
+            visibility: hidden;
+          }
+        }
+      }
+    }
+
+    > div:nth-child(4) { // small link
+      font-weight: 400;
+      font-size: 12px;
+      color: grey;
+      cursor: pointer;
+    }
+
+    > div:nth-child(5) { // error message
+      font-weight: 500;
+      font-size: 13px;
+      color: red;
+    }
+  }
+}
+
+#user-account-container {
+  > div:nth-child(2) { // body
+    padding: 15px;
+
+    > div:nth-child(1) { // profile
+      margin-bottom: 20px;
+
+      > div:nth-child(1) { // header
+        font-size: 16px;
+        font-weight: 300;
+        margin-bottom: 10px;
+      }
+
+      > div:nth-child(2) { // body
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+
+        > div:nth-child(1) { // label
+          font-weight: 500;
+          color: grey;
+          margin-right: 10px;
+          margin-left: 5px;
+          font-size: 13px;
+        }
+      }
+    }
+
+    > div:nth-child(2) { // synchronize data
+      margin-bottom: 20px;
+
+      > * {
+        margin-bottom: 10px;
+      }
+
+      > div:nth-child(1) { // header
+        font-size: 16px;
+        font-weight: 300;
+      }
+
+      > div:nth-child(2) { // buttons
+        display: flex;
+        max-width: 350px;
+
+        > div { // button
+          flex: 1 0 auto;
+          padding: 6px;
+          background: grey;
+          box-shadow: 0 0px 3px 0px rgba(0, 0, 0, 0.3);
+          color: white;
+          font-weight: 500;
+          font-size: 13px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 10px;
+
+          .spinner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-width: 1px;
+            visibility: hidden;
+          }
+          &.loading {
+            .spinner {
+              visibility: initial;
+            }
+            span {
+              visibility: hidden;
+            }
+          }
+        }
+      }
+
+      > div:nth-child(3), div:nth-child(4) { // error message
+        margin-left: 8px;
+        font-weight: 500;
+        font-size: 13px;
+        color: red;
+      }
+    }
+
+    > div:nth-child(3) { // logout
+      font-size: 14px;
+      color: $grey-4;
+      font-weight: 500;
+      cursor: pointer;
+    }
+  }
+}

@@ -1,5 +1,8 @@
-import { update, parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo } from './utils';
 import fs from 'fs';
+import _ from 'lodash';
+
+import { update, parseYoutubeUrl, extractFormats, chooseFormat,
+         getYoutubeVideoInfo, getYoutubePlaylistInfo, getYoutubeAudioData } from './utils';
 
 const readFile = (path) => new Promise(resolve => {
   fs.readFile(path, (__, data) => resolve(data.toString()));
@@ -20,6 +23,32 @@ it('parseYoutubeUrl', () => {
   expect(parseYoutubeUrl(url)).toEqual({
     type: 'playlist',
     id: 'PL7sA_SkHX5ye2Q1BxeMA5SHZOtYJzBxkX'
+  });
+});
+
+it('extractFormats', async () => {
+  const text = await readFile('src/fixtures/video.html');
+  const formats = extractFormats(text);
+  expect(formats[0]).toEqual({
+    "audioQuality": "AUDIO_QUALITY_LOW",
+    "audioSampleRate": "44100",
+    "bitrate": 738960,
+    "contentLength": "5676880",
+    "itag": 18,
+    "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
+    "quality": "medium",
+    "qualityLabel": "360p",
+    "url": "https://r3---sn-qxo7rn7l.googlevideo.com/videoplayback?expire=1566498769&ei=cYteXb7QL4mUwQHH9YaQAg&ip=35.187.132.150&id=o-ALn-WHid0mIV26zsZ8QQVNfG2Kq6qbfEJlgYH--Uhy_A&itag=18&source=youtube&requiressl=yes&mm=31%2C26&mn=sn-qxo7rn7l%2Csn-vgqsrnek&ms=au%2Conr&mv=m&mvi=2&pl=28&mime=video%2Fmp4&gir=yes&clen=5676880&ratebypass=yes&dur=61.509&lmt=1559771084114474&mt=1566477055&fvip=3&c=WEB&txp=5531432&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cmime%2Cgir%2Cclen%2Cratebypass%2Cdur%2Clmt&sig=ALgxI2wwRgIhAMzTeegiLotwiB9hC381RIVPpP3MKnH1TEfINVHM1N_gAiEA1BOYcYbVxZko8o7duVGgMCg7t1LNC0kW13CwhedVihA%3D&lsparams=mm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl&lsig=AHylml4wRQIhAP58TVpoX9BTVLz-gXu3-yqh25nalg70swkHL3lJLNfrAiACM_YW8EtRx1oZw9s9ezYQeW9mYNXHYSiX70aMg6LXhA%3D%3D",
+  });
+});
+
+it('chooseFormat', async () => {
+  const text = await readFile('src/fixtures/video.html');
+  const format = chooseFormat(extractFormats(text));
+  expect(_.pick(format, ['audioQuality', 'mimeType', 'quality'])).toEqual({
+    "audioQuality": "AUDIO_QUALITY_MEDIUM",
+    "mimeType": "audio/webm; codecs=\"opus\"",
+    "quality": "tiny",
   });
 });
 
@@ -56,6 +85,14 @@ it('getYoutubePlaylistInfo', async () => {
   })
 });
 
+it('getYoutubeAudioData', async () => {
+  const id = 'GkNSbmv6QMQ';
+  return getYoutubeAudioData(id).then(blob => {
+    expect(blob.size).toEqual(947392);
+    expect(blob).toBeInstanceOf(Blob);
+  })
+});
+
 it('update', () => {
   const before = {
     arr: [
@@ -72,12 +109,12 @@ it('update', () => {
   const op = {
     arr: {
       $find: {
-        query: { id: 1 },
-        op: {
+        $query: { id: 1 },
+        $op: {
           innerArr: {
             $find: {
-              query: { id: 4 },
-              op: { $merge: { value: 'UPDATED' } }
+              $query: { id: 4 },
+              $op: { $merge: { value: 'UPDATED' } }
             }
           }
         }
@@ -96,5 +133,6 @@ it('update', () => {
       }
     ]
   }
+  update.defineCustomQuery();
   expect(update(before, op)).toEqual(after);
 });

@@ -7,9 +7,10 @@ import TrackActions from './TrackActions';
 import PlayQueue from './PlayQueue';
 import Saver from './Saver';
 import DownloadList from './DownloadList';
+import UserPage from './UserPage';
 
 const modalPages = {
-  TrackImport, TrackSort, TrackActions, PlayQueue, Saver, DownloadList
+  TrackImport, TrackSort, TrackActions, PlayQueue, Saver, DownloadList, UserPage
 }
 
 export default function Modal() {

@@ -7,10 +7,13 @@ import localforage from 'localforage';
 import { fromEvent } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 
-import { parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo,
-         update, getAudioDataObservable } from "./utils";
+import { update, parseYoutubeUrl, getYoutubeVideoInfo,
+         getYoutubePlaylistInfo, getYoutubeAudioDataUrl,
+         fromAxiosGet, fromStore } from "./utils";
 import AudioManager from './AudioManager';
+import apiUtils from "./apiUtils";
 
+// TODO: Hoping to use typescript soon
 // type ID = String;
 
 // interface Player {
@@ -30,6 +33,11 @@ import AudioManager from './AudioManager';
 //   downloadState: enum 'NOT_STARTED', 'LOADING', 'ERROR', 'CANCELLED', 'DONE'
 // }
 
+// interface User {
+//   username: string,
+//   authToken: string,
+// }
+
 export const initialState = {
   player: {
     currentIndex: null,
@@ -47,6 +55,7 @@ export const initialState = {
   modal: {
     className: null, // cf modalPages in Modal.js
   },
+  user: null,
 };
 
 const statePath = _.memoize((path) => (S) => objectPath.get(S, path));
@@ -75,6 +84,41 @@ const actions = {
   // Dirty shortcut, not supposed to be used much
   _U: (command) => async (D, S) => U(D)(command),
 
+  // User data apis
+  register: (username, password) => async (D, S) => {
+    const response = await apiUtils.register(username, password);
+    U(D)({ user: { $set: _.pick(response.data, [ 'username', 'authToken' ]) }});
+  },
+  login: (username, password) => async (D, S) => {
+    const response = await apiUtils.login(username, password);
+    U(D)({ user: { $set: _.pick(response.data, [ 'username', 'authToken' ]) }});
+  },
+  logout: () => async (D, S) => {
+    AudioManager.reset();
+    U(D)({ $set: initialState });
+  },
+  pullData: () => async (D, S) => {
+    AudioManager.reset();
+    const response = await apiUtils.getData(S());
+    // Need to check since initially data === null on the database
+    if (response.data) {
+      let { tracks, playlists, trackListMode } = response.data;
+      await Promise.all(tracks.map(async t => {
+        const value = await localforage.getItem(t.id);
+        t.downloadState = value ? 'DONE' : 'NOT_STARTED';
+      }));
+      U(D)({ $merge: {
+        tracks,
+        playlists,
+        trackListMode,
+      }});
+    }
+  },
+  pushData: () => async (D, S) => {
+    await apiUtils.patchData(S());
+  },
+
+  // Saving state in client storage for development (not used now)
   getSessionKeys: () => async (D, S) => {
     const keys = await localforage.getItem('session-keys');
     return keys || [];
@@ -153,10 +197,11 @@ const actions = {
     });
   },
 
-  // Actually "start" or "retry after error" (thus check if entry is there already)
+  // Actually "start" or "retry after error/cancel" (thus check if entry is there already)
   startDownloadAudio: (id) => async (D, S) => {
     const downloads = statePath('downloads')(S());
-    const [observable, canceller] = getAudioDataObservable(id);
+    const url = await getYoutubeAudioDataUrl(id);
+    const [observable, canceller] = fromAxiosGet(url, { responseType: 'blob' });
     U(D)({
       tracks: {
         $find: {
@@ -241,23 +286,6 @@ const actions = {
     U(D)({ downloads: { $reject: { id } } });
   },
 
-  // downloadAudioData: (id) => async (D, S) => {
-  //   await localforage.removeItem(id);
-  //   const blob = await getAudioData(id);
-  //   await localforage.setItem(id, blob);
-  //   U(D)({
-  //     tracks: {
-  //       $find: {
-  //         $query: { id },
-  //         $op: {
-  //           $merge: {
-  //             downloadState: 'DONE',
-  //           }
-  //         }
-  //       }
-  //     }
-  //   });
-  // },
   clearAudioData: (id) => async (D, S) => {
     await localforage.removeItem(id);
     U(D)({
@@ -335,32 +363,57 @@ const actions = {
   },
 }
 
-export const setupWithStore = async (store) => {
-  initializeAudioManager(store);
-  await store.dispatch(actions.loadLatestSession());
+export const initializeStateUtils = async (store) => {
+  initializeAudioManager(store.dispatch);
+  await restoreLastState(store.dispatch);
+  fromStore(store).pipe(throttleTime(1000))
+  .subscribe(async (state) => {
+    // Exclueds "downloads" since it includes non-plain object (e.g. ProgressEvent, Error, ...)
+    const stripped = update(state, { downloads: { $set: []} });
+    await localforage.setItem('state-tree', stripped);
+  });
 }
 
-const initializeAudioManager = (store) => {
+const restoreLastState = async (D) => {
+  const lastState = await localforage.getItem('state-tree');
+  if (lastState) {
+    // TODO: refactor this "re-initialize" state pattern (c.f. pullData, importTracks)
+    const { tracks, playlists, trackListMode, user } = lastState;
+    await Promise.all(tracks.map(async t => {
+      const value = await localforage.getItem(t.id);
+      t.downloadState = value ? 'DONE' : 'NOT_STARTED';
+    }));
+    U(D)({ $merge: {
+      tracks,
+      playlists,
+      trackListMode,
+      user,
+    }});
+  }
+}
+
+const initializeAudioManager = (D) => {
   AudioManager.initialize();
 
+  // TODO: explicitly save all "audio" state under redux (e.g. playing, paused, etc...)
   fromEvent(AudioManager.el, 'timeupdate').pipe(throttleTime(800))
   .subscribe(e => {
     const time = e.target.currentTime;
-    store.dispatch(actions._U({
+    U(D)({
       player: { currentTime: { $set: time } }
-    }));
+    });
   });
 
   fromEvent(AudioManager.el, 'durationchange')
   .subscribe(e => {
-    store.dispatch(actions._U({
+    U(D)({
       player: { duration: { $set: e.target.duration } }
-    }));
+    });
   });
 
   fromEvent(AudioManager.el, 'ended')
   .subscribe(e => {
-    store.dispatch(actions.moveCurrentTrack(+1));
+    D(actions.moveCurrentTrack(+1));
   });
 }
 
