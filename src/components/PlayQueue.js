@@ -94,9 +94,6 @@ function SeekSliderWrapper() {
 // The "value" has sort of "uncontrolled"-ness, i.e. prop update will be ignored during:
 // - dragging
 // - onSeek promise is resolving
-//
-// TODO:
-// - Handle touch device (onTouchEnd onTouchMove onTouchStart)
 function SeekSlider({ begin, end, value, format, fraction2value, value2fraction, onSeek }) {
   const draggingDisabled = begin === end;
   const propFraction = value2fraction(value, begin, end);
@@ -104,6 +101,7 @@ function SeekSlider({ begin, end, value, format, fraction2value, value2fraction,
   const [dragging, setDragging] = useState(false);
   const trackNodeRef = useRef(null);
   const propFractionRef = useRef(propFraction);
+  const lastTouchEventRef = useRef(null); // cf. handleDrag with e.type === 'touchend'
 
   if (!dragging && propFractionRef.current !== propFraction) {
     propFractionRef.current = propFraction;
@@ -112,6 +110,25 @@ function SeekSlider({ begin, end, value, format, fraction2value, value2fraction,
 
   const handleDrag = (e) => {
     e.stopPropagation();
+
+    // Not so bad translation from TouchEvent to DragEvent
+    // - Keep last touch event because there's no UI infomation at the time of 'touchend'
+    // - Mutating type seems alright in this case
+    if (e.type.startsWith('touch')) {
+      if (e.type === 'touchstart') {
+        e = e.touches[0];
+        e.type = 'dragstart';
+      }
+      if (e.type === 'touchmove') {
+        e = e.touches[0];
+        e.type = 'dragmove';
+        lastTouchEventRef.current = e;
+      }
+      if (e.type === 'touchend') {
+        e = lastTouchEventRef.current;
+        e.type = 'dragend';
+      }
+    }
 
     if (draggingDisabled) { return; }
 
@@ -140,7 +157,7 @@ function SeekSlider({ begin, end, value, format, fraction2value, value2fraction,
 
   const unsetDragImage = (e) => {
     e.stopPropagation();
-    e.dataTransfer.setDragImage(new Image(), 0, 0);
+    e.dataTransfer && e.dataTransfer.setDragImage(new Image(), 0, 0);
   }
 
   return (
@@ -158,10 +175,13 @@ function SeekSlider({ begin, end, value, format, fraction2value, value2fraction,
         <div
           className='seek-slider__thumb'
           style={{ left: `${fraction * 100}%`}}
+          draggable={!draggingDisabled}
           onDragStart={(e) => { unsetDragImage(e); handleDrag(e); }}
           onDrag={handleDrag}
           onDragEnd={handleDrag}
-          draggable={!draggingDisabled}
+          onTouchStart={handleDrag}
+          onTouchMove={handleDrag}
+          onTouchEnd={handleDrag}
         ></div>
       </div>
       <div className='seek-slider__end'>{ format(end) }</div>
