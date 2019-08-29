@@ -1,0 +1,21 @@
+// Used only for experimentation within storybook (cf. story.js)
+.sb-show-main {
+  .spinner-container-mixin-test {
+    padding: 20px;
+
+    button {
+      border: none;
+      background: grey;
+      color: white;
+      padding: 3px 7px;
+
+      overflow: hidden;
+      @include spinner-container('.loading') {
+        width: 18px;
+        height: 18px;
+        border: 1px solid white;
+        border-right-color: black;
+      };
+    }
+  }
+}

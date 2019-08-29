@@ -1,16 +1,11 @@
 import React, { useEffect } from 'react';
-import { useLoader } from '../utils';
+import { useLoader, alertError } from '../utils';
 
+// NOTE: turns out not flexible enough to use...
 export default function LoaderButton(props) {
   const { action, icon, container, ...rest } = props;
   const [ _action, { loading, error } ] = useLoader(action);
-
-  // TODO: should support props.onError to pass status?
-  useEffect(() => {
-    if (error) {
-      window.alert(error);
-    }
-  }, [ error ]);
+  alertError(error);
 
   const Klass = container || 'div';
 

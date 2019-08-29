@@ -29,13 +29,16 @@ i {
   }
 }
 
-.spinner {
+// cf. story.scss
+@mixin spinner {
+  position: absolute;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: 2px solid $grey-4;
   border-right-color: $grey-8;
   animation: spinner_keyframes 0.6s linear infinite;
+  @content;
 
   @keyframes spinner_keyframes {
     from {
@@ -43,6 +46,35 @@ i {
     }
     to {
       transform: rotate(360deg);
+    }
+  }
+}
+
+// Default use case of above spinner (i.e. centering spinner with keeping original layout)
+// If necessary, spinner style can be customized via @content. (cf. story.scss .spinner-container-mixin-test)
+@mixin spinner-container($switch-query) {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &::after {
+    content: '';
+    position: absolute;
+    display: none;
+    @include spinner {
+      @content;
+    };
+  }
+
+  &#{$switch-query} {
+    // Easily keep layout of container by changing only visibility
+    > * {
+      visibility: hidden;
+    }
+
+    &::after {
+      display: initial;
     }
   }
 }

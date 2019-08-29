@@ -57,26 +57,9 @@
       > div:nth-child(3) { // action
         cursor: pointer;
         margin-left: 7px;
-
-        display: flex;
-        align-items: center;
-
-        .spinner {
-          position: absolute;
-          visibility: hidden;
-        }
-
+        @include spinner-container('.non-cancellable-loading');
         > i {
           font-size: 20px;
-        }
-
-        &.non-cancellable-loading {
-          .spinner {
-            visibility: initial;
-          }
-          > i {
-            visibility: hidden;
-          }
         }
       }
     }

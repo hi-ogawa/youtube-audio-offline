@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import CN from 'classnames';
 
 import { useActions, useStatePath } from '../stateUtils';
-import { useLoader } from '../utils';
-import LoaderButton from './LoaderButton';
+import { useLoader, alertError } from '../utils';
 
 export default function TrackImport() {
   const playlists = useStatePath('playlists');
@@ -10,12 +10,7 @@ export default function TrackImport() {
   const { importTracks, setModal } = useActions();
   const [ _importTracks, { loading, error } ] =
     useLoader(() => importTracks(text).then(() => setModal(null)));
-
-  useEffect(() => {
-    if (error) {
-      window.alert(error);
-    }
-  }, [ error ]);
+  alertError(error);
 
   return (
     <div id='track-import-container'>
@@ -30,11 +25,11 @@ export default function TrackImport() {
             <button
               onClick={_importTracks}
               disabled={text.length === 0 || loading}
+              className={CN({ loading })}
             >
+              {/* Spinner is implemented via css ".loading::after" */}
               { error
                 ? <i className='material-icons'>error</i>
-                : loading
-                ? <div className='spinner' />
                 : <i className='material-icons'>add</i>
               }
             </button>
@@ -45,19 +40,31 @@ export default function TrackImport() {
       <section>
         <h1>Re-import from Playlist</h1>
         <div className='playlists'>
-          { playlists.map(playlist =>
-              <div key={playlist.id}>
-                <div>{ playlist.name }</div>
-                <LoaderButton
-                  action={() =>
-                    importTracks(`https://www.youtube.com/playlist?list=${playlist.id}`)
-                    .then(() => setModal(null))
-                  }
-                  icon='sync' />
-              </div>
-          )}
+          { playlists.map(playlist => <PlaylistRow key={playlist.id} {...{ playlist }}/>) }
         </div>
       </section>
+    </div>
+  );
+}
+
+function PlaylistRow({ playlist }) {
+  const { importTracks } = useActions();
+  const [ _importTracks, { loading, error } ] =
+    useLoader(() => importTracks(`https://www.youtube.com/playlist?list=${playlist.id}`));
+  alertError(error)
+
+  return (
+    <div key={playlist.id}>
+      <div>{ playlist.name }</div>
+      <div
+        onClick={() => !loading && _importTracks()}
+        className={CN({ loading })}
+      >
+        {/* Spinner is implemented via css ".loading::after" */}
+        { error
+          ? <i className='material-icons'>error</i>
+          : <i className='material-icons'>sync</i> }
+      </div>
     </div>
   );
 }

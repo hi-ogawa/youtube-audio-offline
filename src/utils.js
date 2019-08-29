@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { Context } from 'immutability-helper';
 import { sprintf } from 'sprintf-js';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Observable } from 'rxjs';
 import axios from 'axios';
 
@@ -20,6 +20,15 @@ export const formatTime = (_sec) => {
 export const stopProp = (f) => (e) => {
   e.stopPropagation();
   return f(e);
+}
+
+// TODO: should handle error globally but for now this is the least thing I can do.
+export const alertError = (error) => {
+  useEffect(() => { // eslint-disable-line react-hooks/rules-of-hooks
+    if (error) {
+      window.alert(error);
+    }
+  }, [ error ]);
 }
 
 // cf. https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript

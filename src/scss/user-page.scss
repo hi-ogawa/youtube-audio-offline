@@ -42,26 +42,7 @@
         font-weight: 500;
         font-size: 13px;
         cursor: pointer;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        .spinner {
-          position: absolute;
-          width: 16px;
-          height: 16px;
-          border-width: 1px;
-          visibility: hidden;
-        }
-        &.loading {
-          .spinner {
-            visibility: initial;
-          }
-          span {
-            visibility: hidden;
-          }
-        }
+        @include spinner-container('.loading');
       }
     }
 
@@ -125,7 +106,7 @@
         max-width: 350px;
 
         > div { // button
-          flex: 1 0 auto;
+          flex: 1 1 50%;
           padding: 6px;
           background: grey;
           box-shadow: 0 0px 3px 0px rgba(0, 0, 0, 0.3);
@@ -133,26 +114,12 @@
           font-weight: 500;
           font-size: 13px;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           margin: 0 10px;
-
-          .spinner {
-            position: absolute;
+          @include spinner-container('.loading') {
             width: 16px;
             height: 16px;
             border-width: 1px;
-            visibility: hidden;
-          }
-          &.loading {
-            .spinner {
-              visibility: initial;
-            }
-            span {
-              visibility: hidden;
-            }
-          }
+          };
         }
       }
 

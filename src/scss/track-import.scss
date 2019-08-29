@@ -44,15 +44,10 @@
       border-left: none;
       padding: 0 8px;
       background: $grey-1;
-
-      display: flex;
-      align-items: center;
-
-      .spinner {
+      @include spinner-container('.loading') {
         width: 16px;
         height: 16px;
-        border-width: 1px;
-      }
+      };
 
       i {
         font-size: 20px;
@@ -75,7 +70,8 @@
       }
 
       > div:not(:nth-child(1)) { // action
-        cursor: pointer
+        cursor: pointer;
+        @include spinner-container('.loading');
       }
     }
   }

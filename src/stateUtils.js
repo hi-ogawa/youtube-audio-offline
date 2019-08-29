@@ -21,7 +21,6 @@ import apiUtils from "./apiUtils";
 //   status: enum 'PLAYING', 'STOPPED'
 //   currentTime: int
 //   duration: int
-//   audio: Audio
 // }
 
 // interface Track {
@@ -368,13 +367,17 @@ const actions = {
 
 export const initializeStateUtils = async (store) => {
   initializeAudioManager(store.dispatch);
+
   await restoreLastState(store.dispatch);
+
   fromStore(store).pipe(throttleTime(1000))
   .subscribe(async (state) => {
     // Exclueds "downloads" since it includes non-plain object (e.g. ProgressEvent, Error, ...)
     const stripped = update(state, { downloads: { $set: []} });
     try {
       await localforage.setItem('state-tree', stripped);
+
+    // TODO: Handle db size limit.
     } catch (err) {
       console.error(err);
     }

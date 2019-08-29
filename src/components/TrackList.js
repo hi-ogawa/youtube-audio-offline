@@ -1,10 +1,10 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import _ from 'lodash';
+import CN from 'classnames';
 
 import { useActions, useStatePath, selectors } from '../stateUtils';
 import { stopProp } from '../utils';
-import LoaderButton from './LoaderButton';
 
 export default function TrackList() {
   const trackListMode = useStatePath('trackListMode');
@@ -38,7 +38,7 @@ export default function TrackList() {
   );
 }
 
-function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrack }) {
+function FlatList({ tracks, currentTrack, setModal, startDownloadAudio, queueTrack }) {
   return (
     <div id='flat-list'>
       { tracks.map(track =>
@@ -53,17 +53,22 @@ function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrac
 
             { track.downloadState === 'DONE'
               ?
-              <div
-                className='list-entry__action'
-                onClick={stopProp(() => queueTrack(track.id, { play: !currentTrack }))}
-              >
-                <i className='material-icons'>add</i>
-              </div>
+                <div
+                  className='list-entry__action'
+                  onClick={stopProp(() => queueTrack(track.id, { play: !currentTrack }))}
+                >
+                  <i className='material-icons'>add</i>
+                </div>
               :
-              <LoaderButton
-                className='list-entry__action'
-                action={stopProp(() => downloadAudioData(track.id))}
-                icon='get_app' />
+                <div
+                  onClick={stopProp(() => track.downloadState !== 'LOADING' && startDownloadAudio(track.id))}
+                  className={CN('list-entry__action', { loading: track.downloadState === 'LOADING' })}
+                >
+                  {/* Spinner is implemented via css ".loading::after" */}
+                  { track.downloadState === 'ERROR'
+                    ? <i className='material-icons'>error</i>
+                    : <i className='material-icons'>get_app</i> }
+                </div>
             }
 
             <div className='list-entry__action' onClick={stopProp(() => setModal('TrackActions', track))}>
@@ -91,18 +96,19 @@ function GroupedList({ groupedTracks, currentTrack, setModal, startDownloadAudio
 
                     { track.downloadState === 'DONE'
                       ?
-                      <div onClick={stopProp(() => queueTrack(track.id, { play: !currentTrack }))}>
-                        <i className='material-icons'>add</i>
-                      </div>
+                        <div onClick={stopProp(() => queueTrack(track.id, { play: !currentTrack }))}>
+                          <i className='material-icons'>add</i>
+                        </div>
                       :
-                      <div onClick={stopProp(() => track.downloadState === 'LOADING' || startDownloadAudio(track.id))}>
-                        { track.downloadState === 'LOADING'
-                          ? <div className='spinner' />
-                          : track.downloadState === 'ERROR'
+                        <div
+                          onClick={stopProp(() => track.downloadState !== 'LOADING' && startDownloadAudio(track.id))}
+                          className={CN({ loading: track.downloadState === 'LOADING' })}
+                        >
+                          {/* Spinner is implemented via css ".loading::after" */}
+                          { track.downloadState === 'ERROR'
                             ? <i className='material-icons'>error</i>
-                            : <i className='material-icons'>get_app</i>
-                        }
-                      </div>
+                            : <i className='material-icons'>get_app</i> }
+                        </div>
                     }
 
                     <div onClick={stopProp(() => setModal('TrackActions', track))}>

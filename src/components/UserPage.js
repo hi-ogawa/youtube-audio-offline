@@ -38,7 +38,6 @@ function Login({ setState }) {
             className={CN({ loading })}
             onClick={() => _login(refNode1.current.value, refNode2.current.value)}
           >
-            <div className='spinner'/>
             <span>Login</span>
           </div>
         </div>
@@ -74,7 +73,6 @@ function Register({ setState }) {
             className={CN({ loading })}
             onClick={() => _register(refNode1.current.value, refNode2.current.value)}
           >
-            <div className='spinner'/>
             <span>Register</span>
           </div>
         </div>
@@ -108,11 +106,9 @@ function UserAccount(props) {
           <div>Synchronize Data</div>
           <div>
             <div className={CN({ loading: state1.loading })} onClick={_pushData}>
-              <div className='spinner'/>
               <span>Upload</span>
             </div>
             <div className={CN({ loading: state2.loading })} onClick={_pullData}>
-              <div className='spinner'/>
               <span>Download</span>
             </div>
           </div>

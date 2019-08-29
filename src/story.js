@@ -1,11 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { storiesOf } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
+import CN from 'classnames';
 
 import './scss/index.scss';
 import { LoaderProofOfConcept, LoaderProgressCancellable }  from './components/Loader';
 import DownloadList from './components/DownloadList';
+
+storiesOf('@spinner-container mixin', module)
+.add('default', () => {
+  function C() {
+    const [loading, setLoading] = useState(false);
+    return (
+      <div className='spinner-container-mixin-test'>
+        <button className={CN({ loading })} onClick={() => setLoading(!loading)}>
+          <span>Submit!</span>
+        </button>
+      </div>
+    );
+  }
+  return <C />;
+});
+
 
 storiesOf('DownloadList', module)
 .add('Default', () => {
