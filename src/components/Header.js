@@ -8,10 +8,11 @@ export default function Header() {
 
   return (
     <div id='header'>
-      {/* TODO: Only for development */}
-      <div onClick={() => setModal('Saver')}>
-        <i className='material-icons-sharp'>save</i>
-      </div>
+      { process.env.NODE_ENV !== 'production' &&
+          <div onClick={() => setModal('Saver')}>
+            <i className='material-icons-sharp'>save</i>
+          </div>
+      }
       <div onClick={() => setModal('DownloadList')}>
         <i className='material-icons'>get_app</i>
       </div>

@@ -1,0 +1,27 @@
+#track-actions-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  > div:nth-child(1) { // header
+    font-weight: 300;
+    font-size: 21px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+  }
+
+  > div:nth-child(2) { // body
+    padding: 15px;
+
+    > div {
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: $grey-7;
+
+      &[disabled] {
+        color: $grey-4;
+      }
+    }
+  }
+}

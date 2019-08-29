@@ -7,9 +7,8 @@ import localforage from 'localforage';
 import { fromEvent } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 
-import { update, parseYoutubeUrl, getYoutubeVideoInfo,
-         getYoutubePlaylistInfo, getYoutubeAudioDataUrl,
-         fromAxiosGet, fromStore } from "./utils";
+import { update, cancellableProgressDownloadRangeRequestObserver, fromStore } from "./utils";
+import { parseYoutubeUrl, getYoutubeVideoInfo, getYoutubePlaylistInfo, getYoutubeAudioDataUrl } from "./youtubeUtils";
 import AudioManager from './AudioManager';
 import apiUtils from "./apiUtils";
 
@@ -54,6 +53,7 @@ export const initialState = {
                  //       avoid re-rendering TrackList during progress update
   modal: {
     className: null, // cf modalPages in Modal.js
+    props: {},
   },
   user: null,
 };
@@ -155,8 +155,8 @@ const actions = {
     }
   },
 
-  setModal: (className) => async (D, S) => {
-    U(D)({ modal: { className: { $set: className } } });
+  setModal: (className, props) => async (D, S) => {
+    U(D)({ modal: { $set: { className, props } } });
   },
 
   importTracks: (url) => async (D, S) => {
@@ -200,8 +200,6 @@ const actions = {
   // Actually "start" or "retry after error/cancel" (thus check if entry is there already)
   startDownloadAudio: (id) => async (D, S) => {
     const downloads = statePath('downloads')(S());
-    const url = await getYoutubeAudioDataUrl(id);
-    const [observable, canceller] = fromAxiosGet(url, { responseType: 'blob' });
     U(D)({
       tracks: {
         $find: {
@@ -215,25 +213,30 @@ const actions = {
         downloads: {
           $find: {
             $query: { id },
-            $op: { $merge: { complete: false, progress: null, canceller, error: null } }
+            $op: { $merge: { complete: false, progress: null, canceller: null, error: null } }
           }
         }
       });
     } else {
       U(D)({
         downloads: {
-          $push: [{ id, complete: false, progress: null, canceller, error: null }]
+          $push: [{ id, complete: false, progress: null, canceller: null, error: null }]
         }
       });
     }
+    const url = await getYoutubeAudioDataUrl(id);
+    const [observable, canceller] =
+        cancellableProgressDownloadRangeRequestObserver(url, {}, Math.pow(2, 22)); // 4MB
     observable.subscribe(
       ({ progress, response }) => {
         if (progress) {
+          const total = progress.total;
+          const loaded = progress.loaded;
           U(D)({
             downloads: {
               $find: {
                 $query: { id },
-                $op: { $merge: { progress } }
+                $op: { $merge: { progress: { total, loaded }, canceller } }
               }
             }
           });
@@ -286,17 +289,17 @@ const actions = {
     U(D)({ downloads: { $reject: { id } } });
   },
 
-  clearAudioData: (id) => async (D, S) => {
+  deleteTrack: (id) => async (D, S) => {
+    await localforage.removeItem(id);
+    U(D)({ tracks: { $reject: { id } } });
+  },
+  deleteAudioData: (id) => async (D, S) => {
     await localforage.removeItem(id);
     U(D)({
       tracks: {
         $find: {
           $query: { id },
-          $op: {
-            $merge: {
-              downloadState: 'NOT_STARTED',
-            }
-          }
+          $op: { $merge: { downloadState: 'NOT_STARTED' } }
         }
       }
     });
@@ -370,7 +373,11 @@ export const initializeStateUtils = async (store) => {
   .subscribe(async (state) => {
     // Exclueds "downloads" since it includes non-plain object (e.g. ProgressEvent, Error, ...)
     const stripped = update(state, { downloads: { $set: []} });
-    await localforage.setItem('state-tree', stripped);
+    try {
+      await localforage.setItem('state-tree', stripped);
+    } catch (err) {
+      console.error(err);
+    }
   });
 }
 

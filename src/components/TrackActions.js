@@ -1,10 +1,25 @@
 import React from 'react';
 
-export default function TrackActions() {
+import { useActions } from '../stateUtils';
+
+export default function TrackActions(props) {
+  const { deleteTrack, deleteAudioData, setModal } = useActions();
+  const { id, downloadState } = props;
+
   return (
     <div id='track-actions-container'>
-      {/* TODO: Menu should have 1) Delete track, 2) Clear audio data 3) Add to queue */}
-      Track Actions (TODO)
+      <div>Track Info</div>
+      <div>
+        <div onClick={() => deleteTrack(id).then(() => setModal(null)) }>
+          Delete Track
+        </div>
+        <div
+          onClick={() => downloadState === 'DONE' && deleteAudioData(id).then(() => setModal(null)) }
+          disabled={downloadState !== 'DONE'}
+        >
+          Delete audio data only
+        </div>
+      </div>
     </div>
   );
 }

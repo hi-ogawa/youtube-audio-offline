@@ -41,119 +41,69 @@ export const fromStore = (store) => {
   return observable;
 }
 
-///////////////////////////
-// Youtube site scraping //
-///////////////////////////
+// [pf1, pf2, ...] --> Promise.resolve().then(pf1).then(pf2).then...
+// @params  Array<() => Promise<()>>
+// @returns Promise<()>
+const sequentialAll = pfs =>
+  _.reduce(pfs, (p, pf) => p.then(pf), Promise.resolve());
 
-export const parseYoutubeUrl = (url) => {
-  const obj = new URL(url);
-  const videoId = obj.searchParams.get('v');
-  const playlistId = obj.searchParams.get('list');
-  if (videoId) {
-    return {
-      type: 'video',
-      id: videoId,
-    }
-  } else if (playlistId) {
-    return {
-      type: 'playlist',
-      id: playlistId
-    }
-  }
-}
+// Name is too long but it's true.
+// @returns [Observable<{ progress, response }>, Canceller]
+export const cancellableProgressDownloadRangeRequestObserver = (url, headers, chunkSize) => {
+  const chunks = [];
+  let chunkedBytes = 0;
+  const { token, cancel } = axios.CancelToken.source();
 
-const extractVideoInfo = (content) => {
-  const mobj = content.match(/;ytplayer\.config\s*=\s*({.+?});ytplayer/);
-  const config = JSON.parse(mobj[1]);
-  const player_response = JSON.parse(config.args.player_response);
-  return _.pick(player_response.videoDetails, ['videoId', 'author', 'title']);
-}
+  const observable = new Observable(subscriber => {
+    // 1. Check the whole range
+    axios.get(url, { headers: { range: 'bytes=0-0', ...headers } })
+    .then((checkResp) => {
 
-export const extractFormats = (content) => {
-  const mobj = content.match(/;ytplayer\.config\s*=\s*({.+?});ytplayer/);
-  const config = JSON.parse(mobj[1]);
-  const player_response = JSON.parse(config.args.player_response);
-  const formats1 = player_response.streamingData.formats;
-  const formats2 = player_response.streamingData.adaptiveFormats;
-  const fields = ['itag', 'url', 'contentLength', 'mimeType',
-                  'quality', 'qualityLabel', 'audioQuality', 'bitrate', 'audioSampleRate'];
-  return _.map(_.concat(formats1, formats2), f => _.pick(f, fields));
-}
+      // 2. Compute ranges dividing total size
+      const total = Number(checkResp.headers['content-range'].match(/bytes 0-0\/(.*)/)[1]);
+      const div = Math.floor(total / chunkSize);
+      const mod = total % chunkSize;
+      const chunkRanges = _.range(div).map(i =>
+        `bytes=${ i * chunkSize }-${ ((i + 1) * chunkSize) - 1}`);
+      if (mod > 0) {
+        chunkRanges.push(`bytes=${ div * chunkSize }-${ div * chunkSize + mod - 1 }`);
+      }
+      subscriber.next({ progress: { loaded: 0, total } })
 
-// Not sure which one is the "best", so just something worked so far.
-export const chooseFormat = (formats) =>
-  formats.find(f => f.mimeType.match('audio/webm') && f.audioQuality !== 'AUDIO_QUALITY_LOW')
+      // 3. Define requests which will be executed sequentially
+      const requestFuncions = chunkRanges.map(range => () => {
+        const promise = axios.get(url, {
+          headers: { range, ...headers },
+          responseType: 'arraybuffer', // NOTE: 'blob' causes internal xhr exception (undebuggable)
+          onDownloadProgress: (progress) => {
+            const loaded = chunkedBytes + progress.loaded;
+            subscriber.next({ progress: { loaded, total } });
+          },
+          cancelToken: token,
+        });
 
-// For a user agent "Mozilla/5.0 (compatible; Google-Apps-Script)"
-const extractPlaylistInfo = (content) => {
-  const document = (new DOMParser()).parseFromString(content, 'text/html');
-  const name = document.querySelector('.pl-header-title').textContent.trim();
-  const nodes = Array.from(document.querySelectorAll('.pl-video'));
-  return {
-    name,
-    videos: nodes.map(node => ({
-      videoId: node.getAttribute('data-video-id'),
-      title:   node.getAttribute('data-title'),
-      author:  node.querySelector('.pl-video-owner a').textContent.trim()
-    }))
-  };
-}
+        // We don't "catch" this promise here
+        // so that single error (including cancel) kills all later requests thanks to 4's sequentialAll
+        return promise.then(response => {
+          chunks.push(response.data);
+          chunkedBytes = chunkedBytes + response.data.byteLength;
+          subscriber.next({ progress: { loaded: chunkedBytes, total } });
+        });
+      });
 
-const createUrl = (url, searchParams) => {
-  const urlObj = new URL(url);
-  _.forOwn(searchParams, (value, key) => {
-    urlObj.searchParams.set(key, value);
+      // 4. Execute them
+      sequentialAll(requestFuncions)
+      .then(() => {
+        // Return as Blob (anyway that's my use case)
+        subscriber.next({ response: { data: new Blob(chunks) } });
+        subscriber.complete();
+      })
+      .catch(err => subscriber.error(err));
+    })
+    .catch(err => subscriber.error(err));
   });
-  return urlObj;
-};
-
-// TODO: such a mess
-const PROXY_URL_V1 = 'https://script.google.com/macros/s/AKfycbwlRhtH1THiHcTY0hbZtcMd1K_ucndHfa-8iugHJMgaKjDY2HqoJbMAACMIITNeMNpZ/exec';
-const PROXY_URL_V2 = 'http://localhost:8080/proxy';
-
-export const getYoutubeVideoInfo = (id) =>
-  fetch(createUrl(PROXY_URL_V1, { url: `https://www.youtube.com/watch?v=${id}` }))
-  .then(resp => resp.text())
-  .then(extractVideoInfo);
-
-export const getYoutubePlaylistInfo = (id) =>
-  fetch(createUrl(PROXY_URL_V1, { url: `https://www.youtube.com/playlist?list=${id}` }))
-  .then(resp => resp.text())
-  .then(extractPlaylistInfo);
-
-const YOUTUBE_DL_URL =
-  process.env.NODE_ENV === 'production'
-  ? 'https://youtube-dl-service.herokuapp.com'
-  : 'http://localhost:3001';
-
-export const getYoutubeAudioDataUrl = (id) =>
-  Promise.resolve(`${YOUTUBE_DL_URL}/download?video=${id}`)
-
-export const getYoutubeAudioData = (id) =>
-  getYoutubeAudioDataUrl(id)
-  .then(fetch)
-  .then(resp => resp.blob());
-
-export const getYoutubeVideoInfo_V2 = (id) =>
-  fetch(createUrl(PROXY_URL_V2, { type: 'video', payload: id }))
-  .then(resp => resp.text())
-  .then(extractVideoInfo);
-
-export const getYoutubePlaylistInfo_V2 = (id) =>
-  fetch(createUrl(PROXY_URL_V2, { type: 'playlist', payload: id }))
-  .then(resp => resp.text())
-  .then(extractPlaylistInfo);
-
-export const getYoutubeFormats_V2 = (id) =>
-  fetch(createUrl(PROXY_URL_V2, { type: 'video', payload: id }))
-  .then(resp => resp.text())
-  .then(extractFormats);
-
-// V2 (backend without youtube-dl) isn't working perfectly yet
-export const getYoutubeAudioDataUrl_V2 = (id) =>
-  getYoutubeFormats_V2(id)
-  .then(formats =>
-    createUrl(PROXY_URL_V2, { type: 'data', payload: chooseFormat(formats).url }));
+  return [observable, cancel];
+}
 
 
 //////////////////

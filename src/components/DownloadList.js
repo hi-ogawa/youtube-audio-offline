@@ -1,5 +1,6 @@
 import React from 'react';
 import _ from 'lodash';
+import CN from 'classnames';
 
 import { useActions, useStatePath } from '../stateUtils';
 import { formatBytes } from '../utils';
@@ -28,10 +29,14 @@ export default function DownloadList() {
                     <div>
                       { d.progress
                         ? `${formatBytes(d.progress.loaded)} / ${formatBytes(d.progress.total)}`
-                        : '0KB / ??'
+                        : '0KB / --B'
                       }
                     </div>
-                    <div onClick={() => cancelDownloadAudio(track.id)}>
+                    <div
+                      onClick={() => d.canceller && cancelDownloadAudio(track.id)}
+                      className={CN({ 'non-cancellable-loading': !d.canceller })}
+                    >
+                      <div className='spinner' />
                       <i className='material-icons'>pause</i>
                     </div>
                   </>

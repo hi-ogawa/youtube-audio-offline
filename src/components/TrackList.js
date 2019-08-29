@@ -66,7 +66,7 @@ function FlatList({ tracks, currentTrack, setModal, downloadAudioData, queueTrac
                 icon='get_app' />
             }
 
-            <div className='list-entry__action' onClick={stopProp(() => setModal('TrackActions'))}>
+            <div className='list-entry__action' onClick={stopProp(() => setModal('TrackActions', track))}>
               <i className='material-icons'>more_vert</i>
             </div>
           </div>
@@ -105,7 +105,7 @@ function GroupedList({ groupedTracks, currentTrack, setModal, startDownloadAudio
                       </div>
                     }
 
-                    <div onClick={stopProp(() => setModal('TrackActions'))}>
+                    <div onClick={stopProp(() => setModal('TrackActions', track))}>
                       <i className='material-icons'>more_vert</i>
                     </div>
                   </div>

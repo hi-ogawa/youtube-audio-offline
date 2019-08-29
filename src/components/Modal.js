@@ -14,7 +14,7 @@ const modalPages = {
 }
 
 export default function Modal() {
-  const className =  useStatePath('modal.className');
+  const { className, props } =  useStatePath('modal');
   const Klass = modalPages[className];
   const { setModal } = useActions();
   const nodeRef = useRef(null);
@@ -30,7 +30,7 @@ export default function Modal() {
         <div id='close-modal' onClick={() => setModal(null)}>
           <i className='material-icons'>close</i>
         </div>
-        { Klass && <Klass /> }
+        { Klass && <Klass {...props} /> }
       </div>
     </div>
   );
