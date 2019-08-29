@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// TODO: Deploy user system backend
-const BACKEND_URL_BASE = 'http://localhost:8080';
+// NOTE: Directly use production (https://github.com/hi-ogawa/toy-user-data-backend)
+const BACKEND_URL_BASE = 'https://user-data-api-autcwh26da-an.a.run.app';
+// const BACKEND_URL_BASE = 'http://localhost:8080';
 
 export default {
   register: async (username, password) => {

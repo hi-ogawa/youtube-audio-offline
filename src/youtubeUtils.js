@@ -63,7 +63,9 @@ const createUrl = (url, searchParams) => {
   return urlObj;
 };
 
+// NOTE: Directly use production (https://github.com/hi-ogawa/toy-proxy)
 const PROXY_URL = 'https://toy-proxy-autcwh26da-an.a.run.app';
+// const PROXY_URL = 'http://localhost:3030';
 
 const headers1 = {
   'Accept-Language': 'en-US,en',
