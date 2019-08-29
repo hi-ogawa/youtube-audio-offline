@@ -49,9 +49,30 @@
   height: 100%;
   z-index: 1;
   background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
 
-  &[disabled] {
-    visibility: hidden;
+  &.visible {
+    visibility: initial;
+  }
+
+  &.fadeIn {
+    animation: fade-in-keyframes 0.2s ease-in;
+    animation-fill-mode: forwards;
+
+    @keyframes fade-in-keyframes {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  }
+
+  &.fadeOut {
+    animation: fade-out-keyframes 0.2s ease-in;
+    animation-fill-mode: forwards;
+    @keyframes fade-out-keyframes {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   }
 
   #modal-inner {

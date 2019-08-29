@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import CN from 'classnames';
 
 import { useActions, useStatePath } from '../stateUtils';
 import TrackImport from './TrackImport';
@@ -19,10 +20,22 @@ export default function Modal() {
   const { setModal } = useActions();
   const nodeRef = useRef(null);
 
+  const [visible, setVisible] = useState(false);
+  const fadeIn = Klass;
+  const fadeOut = !Klass;
+
+  useEffect(() => {
+    if (Klass) {
+      setVisible(true);
+    } else {
+      window.setTimeout(() => setVisible(false), 300);
+    }
+  }, [ Klass ]);
+
   return (
     <div
       id='modal'
-      disabled={!Klass}
+      className={CN({ visible, fadeIn, fadeOut })}
       ref={nodeRef}
       onClick={e => e.target === nodeRef.current && setModal(null)}
     >
