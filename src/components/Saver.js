@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import { useActions } from '../stateUtils';
 
+// NOTE: not used currently
 export default function Saver() {
   const { getSessionKeys, createSession, loadSession, updateSession, destroySession } = useActions();
   const [ keys, setKeys ] = useState([]);
