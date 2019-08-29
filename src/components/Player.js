@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 
 import { useActions, useStatePath, selectors } from '../stateUtils';
-import { formatTime } from '../utils';
+import { formatTime, stopProp } from '../utils';
 
 export default function Player() {
   const status = useStatePath('player.status');
@@ -10,7 +10,7 @@ export default function Player() {
   const { setModal, unpause, pause } = useActions();
 
   return (
-    <div id='player'>
+    <div id='player' onClick={() => setModal('PlayQueue')} >
       <div>
         {
           currentTrack &&
@@ -24,12 +24,12 @@ export default function Player() {
         <CurrentTime />
       </div>
       <div
-        onClick={() =>
+        onClick={stopProp(() =>
           currentTrack && (
             status === 'PLAYING'
             ? pause()
             : unpause()
-          )
+          ))
         }
         disabled={!currentTrack}
       >
