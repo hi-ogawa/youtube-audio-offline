@@ -33,7 +33,7 @@
     "eject": "react-scripts eject",
     "deploy": "now ./build -A ../now.json --debug",
     "build:deploy": "npm run build && npm run deploy",
-    "storybook": "start-storybook"
+    "storybook": "start-storybook -p 9000"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -67,20 +67,36 @@
       border-top: 1px dashed rgba(0, 0, 0, 0.15);
     }
 
-    > div:nth-child(1) { // header
+    > div:nth-child(1) { // group header (author entry)
       display: flex;
       padding: 5px;
       padding-right: 0px;
-      align-items: center;
 
-      white-space: nowrap;
-      overflow-x: auto;
-      overflow-y: hidden;
-      font-weight: 500;
-      color: $grey-6;
+      > div:nth-child(1) { // author name
+        flex: 1 0 auto;
+        white-space: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        font-weight: 500;
+        color: $grey-6;
+
+        // centering text
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+
+    &.expand {
+      > div:not(:nth-child(1)) {
+        height: initial;
+      }
     }
 
     > div:not(:nth-child(1)) { // track entries
+      height: 0;
+      overflow: hidden;
       padding-left: 10px;
 
       > div {                  // track entry

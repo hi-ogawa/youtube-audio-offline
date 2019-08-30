@@ -297,23 +297,25 @@ const actions = {
       }
     });
   },
-  queueTrack: (id, opts={ play: false, clear: false }) => async (D, S) => {
+  queueTracks: (ids, opts={ play: false, clear: false }) => async (D, S) => {
+    let playIndex;
     if (opts.clear) {
+      playIndex = 0;
       U(D)({
         player: {
-          queuedTrackIds: { $set: [ id ] }
+          queuedTrackIds: { $set: ids }
         }
       });
     } else {
+      playIndex = S().player.queuedTrackIds.length;
       U(D)({
         player: {
-          queuedTrackIds: { $push: [ id ] }
+          queuedTrackIds: { $push: ids }
         }
       });
     }
     if (opts.play) {
-      const index = S().player.queuedTrackIds.length - 1;
-      D(actions.setCurrentTrackFromQueueByIndex(index));
+      D(actions.setCurrentTrackFromQueueByIndex(playIndex));
     }
   },
   setCurrentTrackFromQueueByIndex: (index) => async (D, S) => {

@@ -3,10 +3,13 @@ import { storiesOf } from '@storybook/react';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import CN from 'classnames';
+import _ from 'lodash';
 
 import './scss/index.scss';
+import { initialState }  from './stateUtils';
 import { LoaderProofOfConcept, LoaderProgressCancellable }  from './components/Loader';
 import DownloadList from './components/DownloadList';
+import TrackList from './components/TrackList';
 
 
 storiesOf('@spinner-container mixin', module)
@@ -23,6 +26,58 @@ storiesOf('@spinner-container mixin', module)
   }
   return <C />;
 });
+
+
+storiesOf('TrackList', module)
+.add('trackListMode: GROUP', () => {
+  const state = _.extend(initialState, {
+    trackListMode: 'GROUP',
+    tracks: [
+      {
+        id: 1,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'Russian with Anastasia',
+        downloadState: 'DONE'
+      },
+      {
+        id: 2,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'Russian with Anastasia',
+        downloadState: 'DONE'
+      },
+      {
+        id: 3,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'Russian Progress',
+        downloadState: 'DONE'
+      },
+      {
+        id: 4,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'Russian Progress',
+        downloadState: 'DONE'
+      },
+      {
+        id: 5,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'English Spot',
+        downloadState: 'DONE'
+      },
+      {
+        id: 6,
+        title: 'Vlogs in Russian 24. Dacha in Russia. Дача на севере России.',
+        author: 'English Spot',
+        downloadState: 'DONE'
+      }
+    ],
+  });
+  return (
+    <Provider store={createStore(s => s, state)} >
+      <TrackList />
+    </Provider>
+  );
+});
+
 
 storiesOf('DownloadList', module)
 .add('Default', () => {

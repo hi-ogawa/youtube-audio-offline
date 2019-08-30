@@ -8,15 +8,12 @@ body {
   font-family: "Roboto";
 }
 
-// Use custom scrollbar only on desktop
-@media (min-width: $bp-sm) {
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 2px;
-  }
-  :hover::-webkit-scrollbar-thumb {
-    background: hsla(0, 0%, 50%, 0.5);
-  }
+::-webkit-scrollbar {
+  width: 4px;
+  height: 2px;
+}
+:hover::-webkit-scrollbar-thumb {
+  background: hsla(0, 0%, 50%, 0.5);
 }
 
 i {
