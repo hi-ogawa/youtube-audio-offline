@@ -4,7 +4,6 @@ import { createSelector } from 'reselect';
 import objectPath from "object-path";
 import _ from 'lodash';
 import localforage from 'localforage';
-import { fromEvent } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 
 import { update, cancellableProgressDownloadRangeRequestObserver, fromStore } from "./utils";
@@ -18,9 +17,6 @@ import apiUtils from "./apiUtils";
 // interface Player {
 //   currentIndex: int,
 //   queuedTrackIds: Array<ID>,
-//   status: enum 'PLAYING', 'STOPPED'
-//   currentTime: int
-//   duration: int
 // }
 
 // interface Track {
@@ -40,9 +36,6 @@ export const initialState = {
   player: {
     currentIndex: null,
     queuedTrackIds: [],
-    status: 'STOPPED', // 'PLAYING'
-    currentTime: null,
-    duration: null
   },
   tracks: [],
   trackListMode: 'GROUP', // 'FLAT'
@@ -51,10 +44,11 @@ export const initialState = {
                  // NOTE: we could've put this information in Track but this separation makes it possible to
                  //       avoid re-rendering TrackList during progress update
   modal: {
-    className: null, // cf modalPages in Modal.js
+    className: null, // cf. modalPages in Modal.js
     props: {},
   },
   user: null,
+  audioElement: null, // cf. initializeAudioManager
 };
 
 const statePath = _.memoize((path) => (S) => objectPath.get(S, path));
@@ -337,6 +331,7 @@ const actions = {
     if (index < 0) { index = index + queuedTrackIds.length; }
     D(actions.setCurrentTrackFromQueueByIndex(index));
   },
+  // TODO: If index === currentIndex, then update play track
   removeTrackFromQueueByIndex: (index) => async (D, S) => {
     U(D)({ player: { queuedTrackIds: { $splice: [[index, 1]] } } });
   },
@@ -346,18 +341,15 @@ const actions = {
     console.assert(blob !== null);
     AudioManager.setBlob(blob)
     await AudioManager.play();
-    U(D)({ player: { status: { $set: 'PLAYING' } } });
 
     const { title } = selectors.currentTrack(S());
     document.title = title;
   },
   unpause: () => async (D, S) => {
     await AudioManager.play();
-    U(D)({ player: { status: { $set: 'PLAYING' } } });
   },
   pause: () => async (D, S) => {
     await AudioManager.pause();
-    U(D)({ player: { status: { $set: 'STOPPED' } } });
   },
   seek: (time) => async (D, S) => {
     await AudioManager.seek(time);
@@ -402,28 +394,23 @@ const restoreLastState = async (D) => {
   }
 }
 
+// TODO:
+// Not sure yet how it affects overall "performance"
+// (cf. CurrentTime (Player.js), SeekSliderWrapper (PlayQueue.js))
+const THROTTLE_TIME = 800;
+
 const initializeAudioManager = (D) => {
   AudioManager.initialize();
 
-  // TODO: explicitly save all "audio" state under redux (e.g. playing, paused, etc...)
-  fromEvent(AudioManager.el, 'timeupdate').pipe(throttleTime(800))
-  .subscribe(e => {
-    const time = e.target.currentTime;
-    U(D)({
-      player: { currentTime: { $set: time } }
-    });
-  });
+  U(D)({ audioElement: { $set: AudioManager.getState() } });
 
-  fromEvent(AudioManager.el, 'durationchange')
-  .subscribe(e => {
-    U(D)({
-      player: { duration: { $set: e.target.duration } }
-    });
-  });
+  AudioManager.getObservable(THROTTLE_TIME)
+  .subscribe(({ type, state }) => {
+    U(D)({ audioElement: { $set: state } });
 
-  fromEvent(AudioManager.el, 'ended')
-  .subscribe(e => {
-    D(actions.moveCurrentTrack(+1));
+    if (type === 'ended') {
+      D(actions.moveCurrentTrack(+1));
+    }
   });
 }
 

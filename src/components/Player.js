@@ -5,7 +5,7 @@ import { useActions, useStatePath, selectors } from '../stateUtils';
 import { formatTime, stopProp } from '../utils';
 
 export default function Player() {
-  const status = useStatePath('player.status');
+  const playing = !useStatePath('audioElement.paused');
   const currentTrack = useSelector(selectors.currentTrack);
   const { setModal, unpause, pause } = useActions();
 
@@ -26,15 +26,13 @@ export default function Player() {
       <div
         onClick={stopProp(() =>
           currentTrack && (
-            status === 'PLAYING'
-            ? pause()
-            : unpause()
+            playing ? pause() : unpause()
           ))
         }
         disabled={!currentTrack}
       >
         <i className='material-icons'>
-          { status === 'PLAYING' ? 'pause' : 'play_arrow' }
+          { playing ? 'pause' : 'play_arrow' }
         </i>
       </div>
       <div onClick={() => setModal('PlayQueue')}>
@@ -46,6 +44,6 @@ export default function Player() {
 
 // Make frequent re-rendering PureComponent as small as possible
 function CurrentTime() {
-  const currentTime =  useStatePath('player.currentTime');
+  const currentTime =  useStatePath('audioElement.currentTime');
   return formatTime(currentTime);
 }

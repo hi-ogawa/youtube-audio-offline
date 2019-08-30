@@ -6,7 +6,7 @@ import { useActions, useStatePath, selectors } from '../stateUtils';
 import { formatTime, stopProp } from '../utils';
 
 export default function PlayQueue() {
-  const status = useStatePath('player.status');
+  const playing = !useStatePath('audioElement.paused');
   const currentIndex = useStatePath('player.currentIndex');
   const queuedTracks = useSelector(selectors.queuedTracks);
   const currentTrack = useSelector(selectors.currentTrack);
@@ -37,6 +37,7 @@ export default function PlayQueue() {
 
       <div className='player-control'>
         <div className='buttons'>
+          {/* TODO: implement */}
           <div disabled>
             {/* repeat_one */}
             <i className='material-icons'>repeat</i>
@@ -48,11 +49,11 @@ export default function PlayQueue() {
             <i className='material-icons'>skip_previous</i>
           </div>
           <div
-            onClick={() => status === 'PLAYING' ? pause() : unpause()}
+            onClick={() => playing ? pause() : unpause()}
             disabled={!currentTrack}
           >
             <i className='material-icons'>
-              { status === 'PLAYING' ? 'pause' : 'play_arrow' }
+              { playing ? 'pause' : 'play_arrow' }
             </i>
           </div>
           <div
@@ -61,6 +62,7 @@ export default function PlayQueue() {
           >
             <i className='material-icons'>skip_next</i>
           </div>
+          {/* TODO: implement */}
           <div disabled>
             <i className='material-icons'>shuffle</i>
           </div>
@@ -73,8 +75,8 @@ export default function PlayQueue() {
 }
 
 function SeekSliderWrapper() {
-  const value = useStatePath('player.currentTime');
-  const end = useStatePath('player.duration');
+  const value = useStatePath('audioElement.currentTime');
+  const end = useStatePath('audioElement.duration');
   const { seek } = useActions();
 
   const props = {

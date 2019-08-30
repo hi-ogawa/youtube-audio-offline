@@ -8,6 +8,7 @@ import './scss/index.scss';
 import { LoaderProofOfConcept, LoaderProgressCancellable }  from './components/Loader';
 import DownloadList from './components/DownloadList';
 
+
 storiesOf('@spinner-container mixin', module)
 .add('default', () => {
   function C() {
@@ -22,7 +23,6 @@ storiesOf('@spinner-container mixin', module)
   }
   return <C />;
 });
-
 
 storiesOf('DownloadList', module)
 .add('Default', () => {

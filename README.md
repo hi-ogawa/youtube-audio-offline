@@ -16,7 +16,6 @@ $ npm run build:deploy
 
 TODO
 
-- Inconsistent pause/unpause behavior when audio controlled from mobile notification bar
 - Show storage usage (`localforage.setItem` fails when db limit exceeded.)
 - Download audio data sequentially (some queueing logic within redux state)
 - Put all downloaded track into queue

@@ -1,7 +1,9 @@
-import { fromEvent } from 'rxjs';
-import { first, timeout } from 'rxjs/operators';
+import _ from 'lodash';
+import { fromEvent, merge } from 'rxjs';
+import { first, timeout, map, throttleTime } from 'rxjs/operators';
 
-const EVENTS = [ // eslint-disable-line no-unused-vars
+// cf. https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
+const EVENTS = [
   "audioprocess",
   "canplay",
   "canplaythrough",
@@ -19,39 +21,54 @@ const EVENTS = [ // eslint-disable-line no-unused-vars
   "seeking",
   "stalled",
   "suspend",
-  "timeupdate",
   "volumechange",
   "waiting"
 ];
 
-const ATTRIBUTES = [ // eslint-disable-line no-unused-vars
+const THROTTLED_EVENTS = [
+  "timeupdate",
+]
+
+const ATTRIBUTES = [
   'readyState', // if readyState >= HAVE_CURRENT_DATA, then audio.play should work
+  'paused',
   'ended',
   'error',
-  'duration',
-  'currentTime',
   'currentSrc',
+  'currentTime',
+  'duration',
+  'playbackRate',
   'volume',
 ]
 
 const { HAVE_CURRENT_DATA } = HTMLMediaElement;
 
+// @returns Observable<{ type, state: {...ATTRIBUTES} }>
+const fromAudioElement = (el, throttle) =>
+  merge(
+    ...EVENTS.map(type => fromEvent(el, type)),
+    ...THROTTLED_EVENTS.map(type => fromEvent(el, type).pipe(throttleTime(throttle))),
+  )
+  .pipe(map(e => ({ type: e.type, state: _.pick(el, ATTRIBUTES) })));
+
 class AudioManagerSingleton {
   initialize() {
     this.el = document.createElement('audio');
     document.body.append(this.el);
-
-    // Log all events (for development/debugging
-    // this.events = [];
-    // EVENTS.forEach(eventName =>
-    //   this.el.addEventListener(eventName, () =>
-    //     console.log(this.events) || this.events.push(eventName)
-    //   )
-    // );
   }
 
+  getState() {
+    return _.pick(this.el, ATTRIBUTES);
+  }
+
+  getObservable(throttle) {
+    return fromAudioElement(this.el, throttle);
+  }
+
+  // TODO: handle timeout error
   wait(eventName) {
     return new Promise((resolve, reject) => {
+      // TODO; should dispose explicitly?
       fromEvent(this.el, eventName).pipe(
         first(),
         timeout(1000)
