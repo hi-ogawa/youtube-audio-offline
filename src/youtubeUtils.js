@@ -64,8 +64,9 @@ const createUrl = (url, searchParams) => {
 };
 
 // NOTE: Directly use production (https://github.com/hi-ogawa/toy-proxy)
-const PROXY_URL = 'https://toy-proxy-autcwh26da-an.a.run.app';
-// const PROXY_URL = 'http://localhost:3030';
+const PROXY_URL = 'https://toy-proxy.hiogawa.now.sh' // ZeitNow managed Amazon lambda
+// const PROXY_URL = 'https://toy-proxy-autcwh26da-an.a.run.app'; // Google's cloud run
+// const PROXY_URL = 'http://localhost:8080'; // local development
 
 const headers1 = {
   'Accept-Language': 'en-US,en',
@@ -95,4 +96,4 @@ export const getYoutubeAudioDataUrl = (id) =>
   getYoutubeFormats(id)
   .then(chooseFormat)
   .then(({ url }) =>
-    createUrl(PROXY_URL, { url, resolveRedirection: true, requestHeaderBlacklist: ['host'] }));
+    createUrl(PROXY_URL, { url, followRedirection: true, requestHeaderBlacklist: ['host'] }));

@@ -218,8 +218,12 @@ const actions = {
       });
     }
     const url = await getYoutubeAudioDataUrl(id);
+    // Range request so that it fits current limit:
+    // - 6MB response payload per request: https://docs.aws.amazon.com/lambda/latest/dg/limits.html
+    // - 10 seconds per invocation: https://zeit.co/account/plan
+    // - (currently not used, but if cloud run, then Google's reverse proxy has 32MB limit: https://cloud.google.com/run/quotas)
     const [observable, canceller] =
-        cancellableProgressDownloadRangeRequestObserver(url, {}, Math.pow(2, 22)); // 4MB
+        cancellableProgressDownloadRangeRequestObserver(url, {}, Math.pow(2, 22)); // 4MiB
     observable.subscribe(
       ({ progress, response }) => {
         if (progress) {
