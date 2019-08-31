@@ -1,3 +1,9 @@
 Rails.application.routes.draw do
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+  controller 'application' do
+    post 'register'
+    post 'login'
+    get 'new_token'
+    get 'data', action: 'show_data'
+    patch 'data', action: 'update_data'
+  end
 end
