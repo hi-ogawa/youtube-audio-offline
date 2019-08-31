@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.4.1'
+ruby '2.6.4'
 
 gem 'pg'
 gem 'jwt'
@@ -9,7 +9,6 @@ gem 'jwt'
 group :development, :test do
   gem "factory_bot_rails"
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
-  gem 'rb-readline' # Avoid depending on native library
   gem 'pry-rails'
   gem 'pry-doc'
   gem 'pry-byebug'

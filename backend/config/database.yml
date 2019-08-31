@@ -5,11 +5,18 @@ default: &default
 
 development:
   <<: *default
-  url: postgres://pguser:pgpass@localhost:5432/rails_dev
+  # Use db_dev from docker-compose.yml (NOTE: Since 'db_dev' is "bad hostname", you cannot use url)
+  user: pguser
+  password: pgpass
+  host: db_dev
+  database: rails_dev
 
 test:
   <<: *default
-  url: postgres://pguser:pgpass@localhost:5432/rails_test
+  user: pguser
+  password: pgpass
+  host: db_dev
+  database: rails_test
 
 production:
   <<: *default

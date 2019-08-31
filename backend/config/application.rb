@@ -34,7 +34,7 @@ module Backend
 
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-        origins 'http://localhost:3000', ''
+        origins 'http://localhost:3000', 'https://youtube-audio-offline.hiogawa.now.sh'
         resource '*', headers: 'authorization', methods: :any
       end
     end
