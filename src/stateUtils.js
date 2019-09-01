@@ -88,7 +88,8 @@ const actions = {
   },
   logout: () => async (D, S) => {
     AudioManager.reset();
-    U(D)({ $set: initialState });
+    // TODO: Need to handle JWT expiration and re-login well
+    U(D)({ user: { $set: null } });
   },
   pullData: () => async (D, S) => {
     AudioManager.reset();
