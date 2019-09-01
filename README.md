@@ -39,8 +39,8 @@ Secondary Objectives
 
 Backend services
 
-- https://github.com/hi-ogawa/toy-user-data-backend
-- https://github.com/hi-ogawa/toy-proxy
+- Rails on CloudRun: https://github.com/hi-ogawa/youtube-audio-offline/tree/master/backend
+- ExpressJS on ZeitNow (Amazon Lambda): https://github.com/hi-ogawa/toy-proxy
 
 
 References
