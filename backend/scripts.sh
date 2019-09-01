@@ -29,7 +29,7 @@ GEN
   native-gems)
     shift
     case $1 in
-      # bash script.sh apk-rundeps > apk-rundeps.txt
+      # bash scripts.sh native-gems apk-rundeps > apk-rundeps.txt
       apk-rundeps)
         if ! test -f lib-apk.txt; then echo 'run "lib-apk" first'; exit 1; fi
         cat lib-apk.txt \
@@ -43,7 +43,7 @@ GEN
           printf "%s %s\n" $PKG $DEV_PKG
         done
       ;;
-      # bash script.sh lib-apk > lib-apk.txt
+      # bash scripts.sh native-gems lib-apk > lib-apk.txt
       lib-apk)
         for LIB in $(bash scripts.sh native-gems lib-so); do
           bash scripts.sh apk-search-by-file $LIB \
@@ -78,6 +78,7 @@ GEN
           fi
         done
       ;;
+      *) echo ":: Command [$@] not found." ;;
     esac
   ;;
   apk-search-by-file)
