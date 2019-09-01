@@ -1,0 +1,23 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  # Use db_dev from docker-compose.yml (NOTE: Since 'db_dev' is "bad hostname", you cannot use url)
+  user: pguser
+  password: pgpass
+  host: db_dev
+  database: rails_dev
+
+test:
+  <<: *default
+  user: pguser
+  password: pgpass
+  host: db_dev
+  database: rails_test
+
+production:
+  <<: *default
+  url: <%= ENV['DATABASE_URL'] %>

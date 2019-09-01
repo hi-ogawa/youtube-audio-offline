@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+  rails_dev:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      target: development
+    command: sleep 10d
+    working_dir: /app
+    ports:
+      - 3030:3030
+    volumes:
+      - ./:/app
+      - bundle_vol:/usr/local/bundle
+
+  rails_prod_builder:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      target: builder
+
+  rails_prod:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      target: production
+    # For local testing or production database management (cf. scripts.sh rails_prod)
+    ports:
+      - 3030:3030
+    environment:
+      - RAILS_ENV
+      - RAILS_LOG_TO_STDOUT
+      - DATABASE_URL
+      - RAILS_MASTER_KEY
+
+  db_dev:
+    image: postgres:11.4
+    environment:
+      - POSTGRES_USER=pguser
+      - POSTGRES_PASSWORD=pgpass
+      - PGDATA=/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    volumes:
+      - db_dev_vol:/var/lib/postgresql/data
+
+volumes:
+  db_dev_vol:
+  bundle_vol:

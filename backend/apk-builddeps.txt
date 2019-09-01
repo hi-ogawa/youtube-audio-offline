@@ -1,0 +1,13 @@
+libc6-compat musl-dev
+gmp gmp-dev
+gcompat 
+xz-libs xz-dev
+zlib zlib-dev
+libpq postgresql-dev
+libssl1.1 openssl-dev
+libcrypto1.1 openssl-dev
+krb5-libs krb5-dev
+libldap openldap-dev
+libcom_err e2fsprogs-dev
+keyutils-libs keyutils-dev
+libsasl cyrus-sasl-dev
